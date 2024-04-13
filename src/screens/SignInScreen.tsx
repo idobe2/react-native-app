@@ -54,7 +54,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       <Text>{JSON.stringify(userInfo, null, 2)}</Text>
       <Button title="Sign in with Google" onPress={() => promptAsync()} />
       <Button title="Delete local storage" onPress={() => AsyncStorage.removeItem("@user").then(() => setUserInfo(null))} />
-      <Button title="Go to Home" onPress={() => navigation.replace('Home')} />
+      <Button title="Go to Dashboard" onPress={() => navigation.replace('Dashboard')} />
     </View>
   );
 };
