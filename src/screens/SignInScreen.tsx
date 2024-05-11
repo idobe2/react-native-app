@@ -61,10 +61,11 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         if (responseFromServer.status === 200) {
             console.log("Login successful");
             await AsyncStorage.setItem("@user", JSON.stringify(responseFromServer.data));
-            setUserInfo(responseFromServer.data);
+            setUserInfo(responseFromServer.config.data);
+            // console.log(responseFromServer);
             alert("Login successful");
-            // navigation.replace("Dashboard");
-        } else {
+            navigation.replace("Dashboard", { user: userInfo });
+          } else {
             console.log("Login failed with status: ", responseFromServer.status);
         }
     } catch (error: unknown) {
@@ -115,7 +116,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         />
         <Button
           title="Go to Dashboard"
-          onPress={() => navigation.replace("Dashboard")}
+          onPress={() => navigation.replace("Dashboard", { user: userInfo })}
         />
       </View>
     </View>
