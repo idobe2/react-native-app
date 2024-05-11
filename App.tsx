@@ -20,7 +20,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SignIn" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="SignIn" component={SignInScreen} />
-        <Stack.Screen name="Dashboard" component={Dashboard} />
+        <Stack.Screen name="Dashboard" component={Dashboard as React.FC<{}>} />
       </Stack.Navigator>
     </NavigationContainer>
   );
