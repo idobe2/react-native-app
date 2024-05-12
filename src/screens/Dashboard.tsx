@@ -38,7 +38,11 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
         tabBarInactiveTintColor: "gray",
       })}
     >
-      <Tab.Screen name="Home" component={Home} />
+      <Tab.Screen 
+      name="Home" 
+      component={Home as React.FC<{}>}
+      initialParams={{ user: user }} 
+      />
       <Tab.Screen
         name="Settings"
         component={Settings as React.FC<{}>}
