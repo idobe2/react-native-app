@@ -69,10 +69,8 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       if (responseFromServer.status === 200) {
         console.log("Login successful");
         alert("Login successful");
-        await AsyncStorage.setItem(
-          "@user",
-          JSON.stringify(responseFromServer.data)
-        );
+        await AsyncStorage.setItem("@user", JSON.stringify(responseFromServer.data));
+        setUserInfo(responseFromServer.data);
         if (userInfo) navigation.replace("Dashboard", { user: userInfo });
         else navigation.replace("Dashboard", { user: responseFromServer.data });
       } else {

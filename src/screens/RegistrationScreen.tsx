@@ -4,11 +4,11 @@ import axios from 'axios';
 import config from './../core/config';
 
 const RegistrationScreen: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleRegistration = async () => {
-    if (username === '' || password === '') {
+    if (email === '' || password === '') {
       Alert.alert('Please fill in all fields');
       return;
     }
@@ -17,14 +17,37 @@ const RegistrationScreen: React.FC = () => {
       return;
     }
     try {
-        const responseFromServer = await axios.post(`${config.serverAddress}/auth/register`,
-        { username, password }
-    );
-    }
-    catch (error: unknown) {}
+      const responseFromServer = await axios.post(`${config.serverAddress}/auth/register`,
+        { email, password }
 
-    setUsername('');
-    setPassword('');
+      );
+      if (responseFromServer.status === 200) {
+        console.log("Register successful");
+        alert("Register successful");
+        setEmail('');
+        setPassword('');
+      }
+      else {
+        console.log("Login failed with status: ", responseFromServer.status);
+      }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        // Error is an AxiosError, now you can access error.response, error.message, etc.
+        console.log("Login failed with error: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          // alert(`Login failed: ${error.response.data.message}`);
+          alert("Login failed: user already exists");
+        } else {
+          alert("Login failed: Network error or server is down");
+        }
+      } else {
+        // Error is not an AxiosError, handle it differently
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
   };
 
   return (
@@ -33,8 +56,8 @@ const RegistrationScreen: React.FC = () => {
       <TextInput
         style={styles.input}
         placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
+        value={email}
+        onChangeText={setEmail}
         autoCapitalize="none"
       />
       <TextInput
