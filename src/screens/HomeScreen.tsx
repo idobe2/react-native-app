@@ -25,10 +25,10 @@ const Home: React.FC<HomeProps> = ({ route }) => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        console.log(user.accessToken);
+        console.log(`Access Token: ${user.accessToken}\nRefresh Token: ${user.refreshToken}`);
         const response = await axios.get<Post[]>(`${config.serverAddress}/post`);
         setPosts(response.data);
-        console.log(response.data);
+        // console.log(response.data);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch posts", error);
@@ -48,11 +48,11 @@ const Home: React.FC<HomeProps> = ({ route }) => {
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>User Info:</Text>
+      {/* <Text>User Info:</Text>
       <Text></Text>
       <Text>accessToken: {user.accessToken}</Text>
       <Text></Text>
-      <Text>refreshToken: {user.refreshToken}</Text>
+      <Text>refreshToken: {user.refreshToken}</Text> */}
       {loading ? (
         <Text>Loading Posts...</Text>
       ) : (

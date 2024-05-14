@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Home from "./HomeScreen";
 import Settings from "./SettingsScreen";
+import Post from "./PostScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { RouteProp } from "@react-navigation/native";
 
@@ -24,11 +25,15 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
             | "home-outline"
             | "person"
             | "person-outline"
-            | "alert-circle-outline";
+            | "alert-circle-outline"
+            | "add-circle"
+            | "add-circle-outline";
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
           } else if (route.name === "Settings") {
             iconName = focused ? "person" : "person-outline";
+          } else if (route.name === "Post") {
+            iconName = focused ? "add-circle" : "add-circle-outline";
           } else {
             iconName = "alert-circle-outline"; // Default icon to ensure iconName is always defined
           }
@@ -41,6 +46,11 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
       <Tab.Screen 
       name="Home" 
       component={Home as React.FC<{}>}
+      initialParams={{ user: user }} 
+      />
+      <Tab.Screen 
+      name="Post" 
+      component={Post as React.FC<{}>}
       initialParams={{ user: user }} 
       />
       <Tab.Screen
