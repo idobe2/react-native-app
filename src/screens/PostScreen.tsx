@@ -32,6 +32,8 @@ const Post: React.FC<PostProps> = ({ route }) => {
       console.log("user" , user.accessToken);
       if (responseFromServer.status === 201) {
         console.log("Post created successfully");
+        setTitle('');
+        setMessage('');
       }
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {

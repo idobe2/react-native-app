@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import config from "./../core/config";
 
@@ -22,22 +22,25 @@ const Home: React.FC<HomeProps> = ({ route }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        console.log(`Access Token: ${user.accessToken}\nRefresh Token: ${user.refreshToken}`);
-        const response = await axios.get<Post[]>(`${config.serverAddress}/post`);
-        setPosts(response.data);
-        // console.log(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch posts", error);
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchPosts = async () => {
+        try {
+          const response = await axios.get<Post[]>(`${config.serverAddress}/post`);
+          setPosts(response.data);
+          setLoading(false);
+        } catch (error) {
+          console.error("Failed to fetch posts", error);
+          setLoading(false);
+        }
+      };
 
-    fetchPosts();
-  }, []);
+      fetchPosts();
+
+      // Cleanup function, no specific cleanup needed here
+      return () => {};
+    }, [])
+  );
 
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
@@ -48,11 +51,6 @@ const Home: React.FC<HomeProps> = ({ route }) => {
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      {/* <Text>User Info:</Text>
-      <Text></Text>
-      <Text>accessToken: {user.accessToken}</Text>
-      <Text></Text>
-      <Text>refreshToken: {user.refreshToken}</Text> */}
       {loading ? (
         <Text>Loading Posts...</Text>
       ) : (
