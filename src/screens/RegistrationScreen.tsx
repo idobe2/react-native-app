@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Button, Alert, ActivityIndicator, Image } from 'react-native';
 import axios from 'axios';
 import config from './../core/config';
 
@@ -174,7 +174,7 @@ const RegistrationScreen: React.FC = () => {
         autoCapitalize="none"
       />
       {isLoading ? (
-        <ActivityIndicator size="large" /> // Display the loading indicator
+        <ActivityIndicator size="large" />
       ) : ( <Button title="Register" onPress={handleUserRegistration} /> )}
     </View>
   );

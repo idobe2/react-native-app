@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TextInput } from "react-native";
+import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Google from "expo-auth-session/providers/google";
@@ -29,6 +29,8 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState<string>(""); // Declare the email state variable
   const [password, setPassword] = useState<string>(""); // Declare the password state variable
   const [serverResponse, setServerResponse] = useState<string>(""); // Declare the password state variable
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function signIn() {
@@ -60,6 +62,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   };
 
   const onLoginPressed = async () => {
+    setIsLoading(true);
     console.log(email, password);
     try {
       const responseFromServer = await axios.post(
@@ -91,7 +94,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         console.log("An unexpected error occurred:", error);
         alert("An unexpected error occurred");
       }
-    }
+    } finally { setIsLoading(false); }
   };
 
   return (
@@ -113,8 +116,10 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         onChangeText={setPassword}
       />
       <View style={styles.buttonContainer}>
-        <Button title="Sign in" onPress={onLoginPressed} />
-        <Button title="Sign in with Google" onPress={() => promptAsync()} />
+      {isLoading ? (
+        <ActivityIndicator size="large" />
+      ) : ( <Button title="Sign in" onPress={onLoginPressed} /> )}
+      <Button title="Sign in with Google" onPress={() => promptAsync()} />
         <Button
           title="Register"
           onPress={() => navigation.push("Registration")}

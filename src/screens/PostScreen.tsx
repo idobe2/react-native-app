@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { RouteProp } from "@react-navigation/native";
 import axios from "axios";
 import config from "../core/config";
@@ -14,10 +14,13 @@ const Post: React.FC<PostProps> = ({ route }) => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSubmit = async () => {
     // Implement the submit logic, perhaps sending data to a backend or storing locally
+    setIsLoading(true);
     console.log({ title, message });
-
+    
     try {
       const responseFromServer = await axios.post(
         `${config.serverAddress}/post`,
@@ -32,6 +35,7 @@ const Post: React.FC<PostProps> = ({ route }) => {
       console.log("user" , user.accessToken);
       if (responseFromServer.status === 201) {
         console.log("Post created successfully");
+        alert('Post submitted!');
         setTitle('');
         setMessage('');
       }
@@ -48,8 +52,7 @@ const Post: React.FC<PostProps> = ({ route }) => {
         console.log("An unexpected error occurred:", error);
         alert("An unexpected error occurred");
       }
-    }
-    alert('Post submitted!');
+    } finally { setIsLoading(false); }
   };
 
   return (
@@ -69,7 +72,9 @@ const Post: React.FC<PostProps> = ({ route }) => {
         placeholder="Enter message"
         multiline
       />
-      <Button title="Submit Post" onPress={handleSubmit} />
+      {isLoading ? (
+      <ActivityIndicator size="large" />
+      ) : ( <Button title="Submit Post" onPress={handleSubmit} /> )}
     </ScrollView>
   );
 };
