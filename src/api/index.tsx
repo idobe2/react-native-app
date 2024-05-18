@@ -1,0 +1,1 @@
+export { default as PhotoAPI } from './photo-api';
