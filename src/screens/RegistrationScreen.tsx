@@ -9,17 +9,20 @@ import * as ImagePicker from 'expo-image-picker';
 import FormData from 'form-data';
 import StudentModel from '../model/StudentModel';
 import PhotoAPI from '../api/photo-api';
+import * as Permissions from 'expo-permissions';
 
 const RegistrationScreen: React.FC = () => {
 
-  // User input state
+  // ********** Register ********** //
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [image, setImage] = useState('');
+  const [pickerResult, setPickerResult] = useState<ImagePicker.ImagePickerResult | null>(null);
+  
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
-  // const [image, setImage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Access token state
@@ -161,48 +164,64 @@ const RegistrationScreen: React.FC = () => {
     }
   };
 
+  // ********** Image ********** //
+
   const pickImage = async (source: 'camera' | 'gallery') => {
     // Implement image picker logic here
     if (source === 'camera') {
       console.log('Camera selected');
+
       try {
-        const res = await ImagePicker.launchCameraAsync()
-        if (!res.canceled && res.assets.length > 0) {
-          const uri = res.assets[0].uri;
-          setImage(uri);
-          console.log("image: ", image); }
-          //   const formdata = new FormData();
-          //   formdata.append('file', { 
-          //   uri: avatarUri, 
-          //   name: 'image', 
-          //   type: 'image/jpeg' });
-          //   const responseFromServer = await axios.post(`${config.serverAddress}/file`,
-          //   formdata,
-          //   { headers: { 'Content-Type': 'multipart/form-data' } }
-          // );
-          // console.log(responseFromServer);
-      } catch (error) { console.error('Failed to open camera', error); }
-    } else {
-      console.log('Gallery selected');
-      try {
-        const res = await ImagePicker.launchImageLibraryAsync()
-        if (!res.canceled && res.assets.length > 0) {
-          const uri = res.assets[0].uri;
+        // const res = await ImagePicker.launchCameraAsync();
+
+        const pickerResult = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+
+
+      setPickerResult(pickerResult);
+
+        if (!pickerResult.canceled && pickerResult.assets.length > 0) {
+          const uri = pickerResult.assets[0].uri;
           setImage(uri);
         }
+
+      } catch (error) { console.error('Failed to open camera', error); }
+
+    } else {
+      console.log('Gallery selected');
+
+      try {
+        // const res = await ImagePicker.launchImageLibraryAsync();
+
+        const pickerResult = await ImagePicker.launchImageLibraryAsync({
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+
+        setPickerResult(pickerResult);
+        if (!pickerResult.canceled && pickerResult.assets.length > 0) {
+          const uri = pickerResult.assets[0].uri;
+          setImage(uri);
+        } 
 
       } catch (error) { console.error('Failed to open gallery', error); }
     }
   };
 
-  const handlePhotoSubmuit = async () => {
-    try {
-    if (image.length > 0) {
-      console.log('Submitting photo: ', image);
-      await PhotoAPI.submitPhoto(image)
-    }
-    else { alert('Please select a photo') }
-  } catch (error) { console.error('Failed to submit photo', error); }
+  const handlePhotoSubmit = async () => {
+    console.log('handlePhotoSubmit: ', image);
+    await PhotoAPI.submitPhoto(pickerResult);
+
+    
+
+  //   try {
+  //   if (image.length > 0) {
+  //     await PhotoAPI.submitPhoto(image)
+  //   }
+  //   else { alert('Please select a photo') }
+  // } catch (error) { console.error('Failed to submit photo', error); }
   };
 
   return (
@@ -258,7 +277,7 @@ const RegistrationScreen: React.FC = () => {
       {isLoading ? (
         <ActivityIndicator size="large" />
       ) : (<Button title="Register" onPress={handleUserRegistration} />)}
-      <Button title="Submit Photo" onPress={handlePhotoSubmuit} />
+      <Button title="Submit Photo" onPress={handlePhotoSubmit} />
     </View>
   );
 };
