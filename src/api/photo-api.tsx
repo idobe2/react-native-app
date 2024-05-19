@@ -2,79 +2,50 @@ import axios from "axios";
 import FormData from 'form-data';
 import config from "../core/config";
 
-const submitPhoto = async (pickerResult: any) => {
-    let uploadResponse, uploadResult;
+const apiClient = axios.create({
+  baseURL: config.serverAddress,
+  headers: {Accept: "application/vnd.github.v3+json"},
+});
 
-    console.log("submitting photo: ", pickerResult);
+interface UploadImageResponse {
+  message: string;
+  url: string;
+}
 
+const submitPhoto = async (imageUri: string) => {
+    console.log("submitting photo: ", imageUri);
+    const url = `http://${config.serverAddress}/file/upload`;
     try {
-      
-      if (!pickerResult.canceled) {
-        uploadResponse = await uploadImageAsync(pickerResult.uri);
-        uploadResult = await uploadResponse.json();
-      }
-    } catch (e) {
-      console.log({ uploadResponse });
-      console.log({ uploadResult });
-      console.log({ e });
-      alert('Upload failed, sorry :(');
-    } finally {
-      if (!pickerResult.canceled) {
-        alert('Upload success');
-      } else {
-        alert('Upload cancelled');
-      }
-    }
-  };
-
-  async function uploadImageAsync(uri: string) {
-    const apiUrl = `${config.serverAddress}/UploadPhoto`;
-    
-    const uriParts = uri.split('.');
-    const fileType = uriParts[uriParts.length - 1];
-  
-    const formData = new FormData();
-    formData.append('photo', {
-      uri,
-      name: `photo.${fileType}`,
-      type: `image/${fileType}`,
-    } as any);
-  
-    const options = {
-      method: 'POST',
-      body: formData as any,
+      const formData = new FormData();
+      const uriParts = imageUri.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+      const filename = "photo" + Date.now().toString() + "." + fileType;
+      formData.append("file", {
+        uri: imageUri,
+        type: `image/${fileType}`,
+        name: filename,
+      });
+    console.log("form data", formData);
+    console.log("url:", url);
+    const responseFromServer = await apiClient.post("/file/upload", formData,
+    {
       headers: {
-        Accept: 'application/json',
         'Content-Type': 'multipart/form-data',
-      },
-    };
-  
-    return fetch(apiUrl, options);
+      }
+    });
+    // const res = await axios.post('http://172.20.10.2:3000/file/upload', formData)
+    const data = responseFromServer.data as UploadImageResponse;
+    if (data.message !== "Uploaded successfully") {
+      console.log("save failed " + responseFromServer.status); //TODO
+    } else {
+      console.log("save passed");
+      const url = data.url;
+      return url;
+    }
+  } catch (err) {
+    console.log("save failed " + err);
   }
-
-// const submitPhoto = async (imageUri: string) => {
-//     console.log("submitting photo: ", imageUri);
-//     const url = `${config.serverAddress}/file`;
-//     const formData = new FormData();
-
-//     formData.append('image', {
-//         name: 'upload.jpg',
-//         type: 'image/jpeg',
-//         uri: imageUri,
-//     });
-//     console.log("form data", formData);
-
-//     // const uploadResult = await FileSystem.uploadAsync(url, imageUri, {
-//     //   httpMethod: 'POST',
-//     //   uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-//     //   fieldName: 'demo_image'
-//     // });
-
-//     return axios.post(url, formData)
-//     .then(function (response) {
-//         console.log(response.data);
-//     }).catch(function (error) {
-// });
-// }
+  return "";
+};
 
 export default { submitPhoto }

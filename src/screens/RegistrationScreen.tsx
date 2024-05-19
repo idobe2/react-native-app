@@ -6,21 +6,16 @@ import { emailValidator } from '../helpers/EmailValidator';
 import { passwordValidator } from '../helpers/PasswordValidator';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import FormData from 'form-data';
-import StudentModel from '../model/StudentModel';
 import PhotoAPI from '../api/photo-api';
-import * as Permissions from 'expo-permissions';
+import AuthAPI from '../api/auth-api';
 
 const RegistrationScreen: React.FC = () => {
 
   // ********** Register ********** //
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [image, setImage] = useState('');
-  const [pickerResult, setPickerResult] = useState<ImagePicker.ImagePickerResult | null>(null);
-  
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,35 +52,22 @@ const RegistrationScreen: React.FC = () => {
       if (responseFromServer.status === 200) {
         console.log("User: Register successful");
         await new Promise(f => setTimeout(f, 5000));
-        await handleStudentRegistration(extractIdFromResponse(responseFromServer.request._response));
+        await handleStudentRegistration(AuthAPI.extractIdFromResponse(responseFromServer.request._response));
       } else { console.log("Login failed with status: ", responseFromServer.status); }
     }
     catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        // Error is an AxiosError, now you can access error.response, error.message, etc.
         console.log("Login failed with error: ", error.message);
         if (error.response) {
           console.log("Error status: ", error.response.status);
           alert("Login failed: user already exists");
         } else { alert("Login failed: Network error or server is down"); }
       } else {
-        // Error is not an AxiosError, handle it differently
         console.log("An unexpected error occurred:", error);
         alert("An unexpected error occurred");
       }
     }
     finally { setIsLoading(false); }
-  };
-
-  const extractIdFromResponse = (response: string): string => {
-    try {
-      const parsedResponse = JSON.parse(response);
-      console.log("id: ", parsedResponse._id);
-      return parsedResponse._id; // Access the _id field
-    } catch (error) {
-      console.error("Failed to parse JSON", error);
-      return ""; // Return an empty string or handle the error as needed
-    }
   };
 
   const getAccessToken = async () => {
@@ -101,7 +83,6 @@ const RegistrationScreen: React.FC = () => {
       }
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        // Error is an AxiosError, now you can access error.response, error.message, etc.
         console.log("Login failed with error: ", error.message);
         if (error.response) {
           console.log("Error status: ", error.response.status);
@@ -110,7 +91,6 @@ const RegistrationScreen: React.FC = () => {
           alert("Login failed: Network error or server is down");
         }
       } else {
-        // Error is not an AxiosError, handle it differently
         console.log("An unexpected error occurred:", error);
         alert("An unexpected error occurred");
       }
@@ -119,36 +99,28 @@ const RegistrationScreen: React.FC = () => {
 
   const handleStudentRegistration = async (_id: String) => {
     await getAccessToken();
+    const res = await handlePhotoSubmit();
+    console.log("Photo submitted", res);
     console.log("Access token: ", accessToken);
     try {
-      if (image != "") {
-        console.log("Uploading image");
-        // const url = await StudentModel.uploadImage(avatarUri);
-        // console.log("got url: ", url);
-        // setImage(url);
-      }
       const responseFromServer = await axios.post(`${config.serverAddress}/student`,
-        { _id, name, age, image },
+        { _id, name, age, image: res },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-
       if (responseFromServer.status === 201) {
         console.log("Student: Register successful");
         alert("Register successful");
-        // Clear the input fields
-        // setEmail('');
-        // setPassword('');
-        // setConfirmPassword('');
-        // setName('');
-        // setAge('');
+        setImage('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setName('');
+        setAge('');
       }
-      else {
-        console.log("Login failed with status: ", responseFromServer.status);
-      }
+      else { console.log("Login failed with status: ", responseFromServer.status); }
     }
     catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        // Error is an AxiosError, now you can access error.response, error.message, etc.
         console.log("Login failed with error: ", error.message);
         if (error.response) {
           console.log("Error status: ", error.response.status);
@@ -157,7 +129,6 @@ const RegistrationScreen: React.FC = () => {
           alert("Login failed: Network error or server is down");
         }
       } else {
-        // Error is not an AxiosError, handle it differently
         console.log("An unexpected error occurred:", error);
         alert("An unexpected error occurred");
       }
@@ -165,63 +136,44 @@ const RegistrationScreen: React.FC = () => {
   };
 
   // ********** Image ********** //
-
   const pickImage = async (source: 'camera' | 'gallery') => {
-    // Implement image picker logic here
     if (source === 'camera') {
       console.log('Camera selected');
-
       try {
-        // const res = await ImagePicker.launchCameraAsync();
-
         const pickerResult = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [4, 3],
       });
-
-
-      setPickerResult(pickerResult);
-
         if (!pickerResult.canceled && pickerResult.assets.length > 0) {
           const uri = pickerResult.assets[0].uri;
           setImage(uri);
         }
-
       } catch (error) { console.error('Failed to open camera', error); }
-
-    } else {
+    } 
+    else {
       console.log('Gallery selected');
-
       try {
-        // const res = await ImagePicker.launchImageLibraryAsync();
-
         const pickerResult = await ImagePicker.launchImageLibraryAsync({
           allowsEditing: true,
           aspect: [4, 3],
         });
-
-        setPickerResult(pickerResult);
         if (!pickerResult.canceled && pickerResult.assets.length > 0) {
           const uri = pickerResult.assets[0].uri;
           setImage(uri);
         } 
-
       } catch (error) { console.error('Failed to open gallery', error); }
     }
   };
 
   const handlePhotoSubmit = async () => {
     console.log('handlePhotoSubmit: ', image);
-    await PhotoAPI.submitPhoto(pickerResult);
-
-    
-
-  //   try {
-  //   if (image.length > 0) {
-  //     await PhotoAPI.submitPhoto(image)
-  //   }
-  //   else { alert('Please select a photo') }
-  // } catch (error) { console.error('Failed to submit photo', error); }
+    const res = await PhotoAPI.submitPhoto(image);
+    if (res !== "") {
+      console.log('res from handlePhotoSubmit:\n', res);
+      setImage(res);
+      return res;
+    }
+    else { console.log('Failed to submit photo'); }
   };
 
   return (
@@ -277,7 +229,7 @@ const RegistrationScreen: React.FC = () => {
       {isLoading ? (
         <ActivityIndicator size="large" />
       ) : (<Button title="Register" onPress={handleUserRegistration} />)}
-      <Button title="Submit Photo" onPress={handlePhotoSubmit} />
+      {/* <Button title="Submit Photo" onPress={handlePhotoSubmit} /> */}
     </View>
   );
 };
