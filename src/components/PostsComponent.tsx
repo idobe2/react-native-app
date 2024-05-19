@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image } from "react-native";
 import axios from "axios";
 import config from "../core/config";
 import { useFocusEffect } from "@react-navigation/native";
@@ -11,6 +11,7 @@ interface Post {
   message: string;
   image: string;
   owner: string;
+  price: number;  // Assuming price is a number
 }
 
 interface PostsComponentProps {
@@ -26,44 +27,40 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
   useFocusEffect(
     useCallback(() => {
       const fetchPosts = async () => {
+        setLoading(true);
         try {
           const response = await axios.get<Post[]>(`${config.serverAddress}${fetchUrl}`);
           setPosts(response.data);
+          console.log("Posts loaded successfully");
           setLoading(false);
           retryCount = 0; // reset retries on success
-          console.log("Posts loaded successfully");
         } catch (error: unknown) {
           setLoading(false);
           if (retryCount < maxRetries) {
             retryCount++;
-            setPosts([]); // clear posts
             console.log(`Retry ${retryCount}`);
+            setPosts([]); // clear posts on retry
             fetchPosts(); // retry fetching
-          }
-          if (axios.isAxiosError(error)) {
-            if (error.response) {
-              console.log("There no posts: ", error.response.status);
-            } else {
-              alert("Network error or server is down");
-            }
           } else {
-            // Error is not an AxiosError, handle it differently
-            console.log("An unexpected error occurred:", error);
-            alert("An unexpected error occurred");
+            console.log("Failed to fetch posts after retries");
           }
-          setLoading(false);
         }
       };
 
       fetchPosts();
-      return () => {};  // Cleanup placeholder
+      return () => {};
     }, [fetchUrl])
   );
 
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
       <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.category}>Category: {item.category}</Text>
+      <Text>Price: {item.price}₪</Text> 
       <Text>{item.message}</Text>
+      {item.image && (
+        <Image source={{ uri: item.image }} style={styles.image} />
+      )}
     </View>
   );
 
@@ -89,13 +86,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   postContainer: {
-    padding: 10,
+    padding: 20,
     marginVertical: 8,
     backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  category: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 5,
+  },
+  image: {
+    width: 300,
+    height: 200,
+    borderRadius: 5,
+    marginTop: 10,
+    marginBottom: 10,
   },
 });
 

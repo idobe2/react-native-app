@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import PhotoAPI from '../api/photo-api';
 import AuthAPI from '../api/auth-api';
+import StudentApi from '../api/student-api';
 
 const RegistrationScreen: React.FC = () => {
 

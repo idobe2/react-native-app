@@ -1,10 +1,13 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, Image, TextInput, Button } from "react-native";
+import { Alert, View, Text, StyleSheet, Image, TextInput, Button, TouchableOpacity } from "react-native";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
 import config from "../core/config";
 import { RouteProp } from "@react-navigation/native";
 import PostsComponent from "../components/PostsComponent";
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import StudentApi from "../api/student-api";
 
 interface UserInfo {
   _id: string;
@@ -24,8 +27,10 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
-  const [editMode, setEditMode] = useState(false);
+  const [image, setImage] = useState('');
   const [changesMade, setChangesMade] = useState(false);
+  const maxRetries = 3;
+  let retryCount = 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -44,8 +49,9 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
             setUserInfo(responseFromServer.data);
             setName(responseFromServer.data.name);
             setAge(responseFromServer.data.age.toString());
+            setImage(responseFromServer.data.image);
           }
-        } catch (error: unknown) {
+        } catch (error) {
           console.error("Profile loading failed with error: ", error);
         }
       };
@@ -53,17 +59,6 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
       fetchUserInfo();
     }, [user._id, user.accessToken])
   );
-
-  const handleEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = () => {
-    // Implement save functionality here
-    console.log("Saving", { name, age });
-    setEditMode(false);
-    setChangesMade(false);
-  };
 
   const handleInputChange = (newValue: string, field: 'name' | 'age') => {
     setChangesMade(true);
@@ -74,44 +69,77 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
     }
   };
 
-  if (!userInfo) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
+  const handleSave = async () => {
+    const newUserInfo = { 
+      _id: userInfo?._id, 
+      name: name, 
+      age: age, 
+      image: image};
+    await StudentApi.deleteStudent(user.accessToken, userInfo?._id);
+    await StudentApi.submitStudent(newUserInfo, user.accessToken);
+    console.log("Saving", { name, age, image });
+    setChangesMade(false);
+    Alert.alert("Changes saved successfully");
+  };
+
+  const pickImage = async (source: 'camera' | 'gallery') => {
+    let pickerResult;
+    if (source === 'camera') {
+      pickerResult = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+    } else {
+      pickerResult = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+    }
+    if (!pickerResult.canceled && pickerResult.assets) {
+      const uri = pickerResult.assets[0].uri;
+      setImage(uri);
+      setChangesMade(true);
+    }
+  };
+
+  const promptForImageSource = () => {
+    Alert.alert(
+      "Select Image Source",
+      "Choose where to get your image from:",
+      [
+        { text: "Camera", onPress: () => pickImage('camera') },
+        { text: "Gallery", onPress: () => pickImage('gallery') },
+        { text: "Cancel", onPress: () => console.log("User canceled image pick"), style: "cancel" }
+      ],
+      { cancelable: true }
     );
-  }
+  };
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: userInfo.image }}
-        style={styles.image}
+      <TouchableOpacity onPress={promptForImageSource} style={styles.imageContainer}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.image} />
+        ) : (
+          <Image source={require('../assests/avagreen.png')} style={styles.image} />
+        )}
+        <Ionicons name="pencil" size={24} color="black" style={styles.editIcon} />
+      </TouchableOpacity>
+      <TextInput
+        value={name}
+        onChangeText={(text) => handleInputChange(text, 'name')}
+        style={styles.input}
+        placeholder="Name"
       />
-      <View style={styles.row}>
-        <Text style={styles.label}>Name:</Text>
-        <TextInput
-          value={name}
-          onChangeText={(text) => handleInputChange(text, 'name')}
-          style={[styles.input, !editMode && styles.inputDisabled]}
-          editable={editMode}
-        />
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>Age:</Text>
-        <TextInput
-          value={age}
-          onChangeText={(text) => handleInputChange(text, 'age')}
-          style={[styles.input, !editMode && styles.inputDisabled]}
-          editable={editMode}
-          keyboardType="numeric"
-        />
-      </View>
-      {!editMode && <Button title="Edit Profile" onPress={handleEdit} />}
+      <TextInput
+        value={age}
+        onChangeText={(text) => handleInputChange(text, 'age')}
+        style={styles.input}
+        keyboardType="numeric"
+        placeholder="Age"
+      />
       {changesMade && <Button title="Save Changes" onPress={handleSave} />}
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <PostsComponent fetchUrl={`/post/find/${userInfo?._id}`} />
-    </View>
     </View>
   );
 };
@@ -122,35 +150,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  image: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  imageContainer: {
     marginBottom: 20,
+    position: 'relative',
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  editIcon: {
+    position: 'absolute',
+    right: -10,
+    bottom: 0,
   },
   input: {
     fontSize: 16,
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 10,
-    padding: 5,
-    flex: 1,
-    marginBottom: 10,
-  },
-  inputDisabled: {
-    backgroundColor: '#f0f0f0',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '80%',
-    marginBottom: 10,
-  },
-  label: {
-    height: 30,
-    width: 50,
-    marginRight: 10,
-    fontSize: 16,
+    padding: 10,
+    width: '90%',
+    marginBottom: 12,
   }
 });
 
