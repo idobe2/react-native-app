@@ -7,6 +7,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../App";
 import config from "./../core/config";
 import axios from "axios";
+import AuthAPI from "../api/auth-api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,34 +29,47 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   });
   const [email, setEmail] = useState<string>(""); // Declare the email state variable
   const [password, setPassword] = useState<string>(""); // Declare the password state variable
-  const [serverResponse, setServerResponse] = useState<string>(""); // Declare the password state variable
-
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function signIn() {
       const user = await AsyncStorage.getItem("@user");
-      if (!user && response?.type === "success" && response.authentication) {
-        await getUserInfo(response.authentication.accessToken);
-      } else if (user) {
+      if (user) {
         setUserInfo(JSON.parse(user));
+        navigation.replace("Dashboard", { user: JSON.parse(user) });
+      } else if (response?.type === "success" && response.authentication) {
+        console.log("response: ", response.authentication);
+        await getUserInfo(response.authentication);
       }
     }
     signIn();
   }, [response]);
 
-  const getUserInfo = async (token: string) => {
+  const getUserInfo = async (token: any) => {
     if (!token) return;
     try {
       const userInfoResponse = await fetch(
         "https://www.googleapis.com/userinfo/v2/me",
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token.accessToken}` },
         }
       );
       const userInfoJson = await userInfoResponse.json();
       await AsyncStorage.setItem("@user", JSON.stringify(userInfoJson));
       setUserInfo(userInfoJson);
+      // console.log("androidClientId: ", config.androidClientId, "token: ", token);
+      const responseFromServer = await AuthAPI.googleSingIn(config.androidClientId, token.idToken);
+      if (responseFromServer.message === "Login successful") {
+        console.log("responseFromServer: ", responseFromServer);
+        const updatedUserInfo = {
+          ...userInfoJson,
+          ...responseFromServer,
+        };  
+        await AsyncStorage.setItem("@user", JSON.stringify(updatedUserInfo));
+        setUserInfo(updatedUserInfo);
+        alert("Google login successful");
+        navigation.replace("Dashboard", { user: updatedUserInfo });
+      }
     } catch (error) {
       console.error("Failed to fetch user info:", error);
     }
@@ -99,8 +113,8 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text>User Info:</Text>
-      <Text>{JSON.stringify(userInfo, null, 2)}</Text>
+      {/* <Text>User Info:</Text>
+      <Text>{JSON.stringify(userInfo, null, 2)}</Text> */}
       <Text style={styles.title}>Sign In</Text>
       <TextInput
         style={styles.input}

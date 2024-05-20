@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image, RefreshControl  } from "react-native";
 import axios from "axios";
 import config from "../core/config";
 import { useFocusEffect } from "@react-navigation/native";
+import moment from "moment";
 
 interface Post {
   _id: string;
@@ -11,16 +12,18 @@ interface Post {
   message: string;
   image: string;
   owner: string;
-  price: number;  // Assuming price is a number
+  price: number;
+  date: string; // Assuming date is a string
 }
 
 interface PostsComponentProps {
-  fetchUrl: string;  // Prop to specify the URL for fetching posts
+  fetchUrl: string;
 }
 
 const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const maxRetries = 3;
   let retryCount = 0;
 
@@ -52,15 +55,28 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
     }, [fetchUrl])
   );
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    axios.get<Post[]>(`${config.serverAddress}${fetchUrl}`)
+      .then(response => {
+        setPosts(response.data);
+        setRefreshing(false);
+      })
+      .catch(() => {
+        setRefreshing(false);
+      });
+  }, [fetchUrl]);
+
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.category}>Category: {item.category}</Text>
-      <Text>Price: {item.price}₪</Text> 
+      <Text>Price: {item.price}₪</Text>
       <Text>{item.message}</Text>
       {item.image && (
         <Image source={{ uri: item.image }} style={styles.image} />
       )}
+      <Text style={styles.date}>Posted {moment(item.date).fromNow()}</Text>
     </View>
   );
 
@@ -73,6 +89,9 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
           data={posts}
           renderItem={renderPost}
           keyExtractor={item => item._id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       )}
     </View>
@@ -109,6 +128,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
     marginBottom: 10,
+  },
+  date: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 10,
   },
 });
 
