@@ -8,6 +8,7 @@ import { RootStackParamList } from "../../App";
 import config from "./../core/config";
 import axios from "axios";
 import AuthAPI from "../api/auth-api";
+import StudentAPI from "../api/student-api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,10 +36,33 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
     async function signIn() {
       const user = await AsyncStorage.getItem("@user");
       if (user) {
-        setUserInfo(JSON.parse(user));
-        navigation.replace("Dashboard", { user: JSON.parse(user) });
+        const userObj = JSON.parse(user);
+        const student = await StudentAPI.getStudent(userObj.accessToken);
+        if (student) {
+          setUserInfo(userObj);
+          navigation.replace("Dashboard", { user: userObj });
+        } else {
+          console.log("Failed to load student");
+          const res = await AuthAPI.refreshTokens(userObj.refreshToken);
+          if (res) {
+            const updatedUser = {
+              ...userObj,
+              accessToken: res.accessToken,
+              refreshToken: res.refreshToken,
+            };
+            await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+            setUserInfo(updatedUser);
+            console.log("Updated access token: ", res.accessToken);
+            console.log("Updated refresh token: ", res.refreshToken);
+            navigation.replace("Dashboard", { user: updatedUser });
+          }
+          else {
+            await AsyncStorage.removeItem("@user");
+            console.log("Failed to refresh tokens");
+          }
+        }
       } else if (response?.type === "success" && response.authentication) {
-        console.log("response: ", response.authentication);
+        // console.log("response: ", response.authentication);
         await getUserInfo(response.authentication);
       }
     }

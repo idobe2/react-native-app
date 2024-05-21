@@ -1,12 +1,14 @@
+// ProfileScreen.tsx
 import React, { useState, useCallback } from "react";
-import { Alert, View, Text, StyleSheet, Image, TextInput, Button, TouchableOpacity } from "react-native";
+import { Alert, View, StyleSheet, Modal } from "react-native";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
 import config from "../core/config";
 import { RouteProp } from "@react-navigation/native";
 import PostsComponent from "../components/PostsComponent";
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import ProfileView from '../components/ProfileView';
+import ProfileEdit from '../components/ProfileEdit';
 import StudentApi from "../api/student-api";
 
 interface UserInfo {
@@ -22,13 +24,14 @@ interface ProfileProps {
   route: ProfileRouteProp;
 }
 
-const Profile: React.FC<ProfileProps> = ({ route }) => {
+const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   const { user } = route.params;
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [image, setImage] = useState('');
   const [changesMade, setChangesMade] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const maxRetries = 3;
   let retryCount = 0;
 
@@ -74,11 +77,12 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
       _id: userInfo?._id, 
       name: name, 
       age: age, 
-      image: image};
+      image: image || userInfo?.image};
     await StudentApi.deleteStudent(user.accessToken, userInfo?._id);
     await StudentApi.submitStudent(newUserInfo, user.accessToken);
     console.log("Saving", { name, age, image });
     setChangesMade(false);
+    setIsEditing(false);
     Alert.alert("Changes saved successfully");
   };
 
@@ -117,29 +121,31 @@ const Profile: React.FC<ProfileProps> = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={promptForImageSource} style={styles.imageContainer}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.image} />
-        ) : (
-          <Image source={require('../assests/avagreen.png')} style={styles.image} />
-        )}
-        <Ionicons name="pencil" size={24} color="black" style={styles.editIcon} />
-      </TouchableOpacity>
-      <TextInput
-        value={name}
-        onChangeText={(text) => handleInputChange(text, 'name')}
-        style={styles.input}
-        placeholder="Name"
-      />
-      <TextInput
-        value={age}
-        onChangeText={(text) => handleInputChange(text, 'age')}
-        style={styles.input}
-        keyboardType="numeric"
-        placeholder="Age"
-      />
-      {changesMade && <Button title="Save Changes" onPress={handleSave} />}
-      <PostsComponent fetchUrl={`/post/find/${userInfo?._id}`} />
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={isEditing}
+        onRequestClose={() => setIsEditing(false)}
+      >
+        <ProfileEdit
+          name={name}
+          age={age}
+          image={image}
+          onSave={handleSave}
+          onCancel={() => setIsEditing(false)}
+          onInputChange={handleInputChange}
+        />
+      </Modal>
+      {userInfo && (
+        <ProfileView
+          name={name}
+          age={age}
+          image={image}
+          onEdit={() => setIsEditing(true)}
+          onImagePick={promptForImageSource}
+        />
+      )}
+      {userInfo && <PostsComponent fetchUrl={`/post/find/${userInfo._id}`} />}
     </View>
   );
 };
@@ -150,29 +156,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  imageContainer: {
-    marginBottom: 20,
-    position: 'relative',
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  editIcon: {
-    position: 'absolute',
-    right: -10,
-    bottom: 0,
-  },
-  input: {
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 10,
-    padding: 10,
-    width: '90%',
-    marginBottom: 12,
-  }
 });
 
-export default Profile;
+export default ProfileScreen;

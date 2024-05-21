@@ -7,6 +7,56 @@ const getAllStudents = async () => {
     return apiClient.get("/student");
 };
 
+const getStudent = async (accessToken: string) => {
+    try {
+      const responseFromServer = await axios.get(`${config.serverAddress}/student/${accessToken}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("Student loaded successfully");
+        return responseFromServer.data;
+      }
+      else { console.log("Failed to load student: ", responseFromServer.status); }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Failed to load student: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+        } else {
+          console.log("Load failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+      }
+    }
+    return null;
+}
+
+const getStudentById = async (id: string) => {
+  try {
+    const responseFromServer = await axios.get(`${config.serverAddress}/student/get/${id}`);
+    if (responseFromServer.status === 200) {
+      console.log("Student get successfully");
+      return responseFromServer.data;
+    }
+    else { console.log("Failed to get student: ", responseFromServer.status); }
+  }
+  catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.log("Failed to get student: ", error.message);
+      if (error.response) {
+        console.log("Error status: ", error.response.status);
+      } else {
+        console.log("Load failed: Network error or server is down");
+      }
+    } else {
+      console.log("An unexpected error occurred:", error);
+    }
+  }
+  return null;
+}
+
 const uploadImage = async (image: any) => {
     return apiClient.post("/file/file", image);
 }
@@ -66,5 +116,7 @@ export default {
     getAllStudents,
     uploadImage,
     submitStudent,
-    deleteStudent
+    deleteStudent,
+    getStudent,
+    getStudentById
 }

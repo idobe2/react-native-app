@@ -13,24 +13,7 @@ const getUserInfo = async (token: string) => {
     );
     const userInfoJson = await userInfoResponse.json();
     await AsyncStorage.setItem("@user", JSON.stringify(userInfoJson));
-    const getUserInfo = async (token: string) => {
-      if (!token) return;
-      try {
-        const userInfoResponse = await fetch(
-          "https://www.googleapis.com/userinfo/v2/me",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const userInfoJson = await userInfoResponse.json();
-        // await AsyncStorage.setItem("@user", JSON.stringify(userInfoJson));
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-      }
-      console.log('userInfoJson: ', userInfoJson);
-      
-      return userInfoJson;
-    };
+    return userInfoJson;
   } catch (error) {
     console.error("Failed to fetch user info:", error);
   }
@@ -48,8 +31,7 @@ const extractIdFromResponse = (response: string): string => {
   };
 
   const googleSingIn = async (audience: string, idToken: string) => {
-    console.log("androidClientId: ", audience, "token: ", idToken);
-    console.log(`${config.serverAddress}/auth/google`);
+    // console.log("googleSignIn:\nandroidClientId: ", audience, "\ntoken: ", idToken);
     const data = {
       credentialResponse: idToken,
       audience: config.androidClientId,
@@ -60,7 +42,7 @@ const extractIdFromResponse = (response: string): string => {
       );
       if (responseFromServer.status === 200) {
         console.log("User submited successfully");
-        console.log("responseFromServer: ", responseFromServer.data);
+        // console.log("responseFromServer: ", responseFromServer.data);
         return responseFromServer.data;
       }
       else { console.log("Failed to submit user: ", responseFromServer.status); }
@@ -79,8 +61,38 @@ const extractIdFromResponse = (response: string): string => {
     }
   }
 
+  const refreshTokens = async (refreshToken: string) => {
+    console.log("Refresh token: ", refreshToken);
+    try {
+      const responseFromServer = await axios.get(`${config.serverAddress}/auth/refresh`,
+      {
+        headers: { 'Authorization': `Bearer ${refreshToken}` },
+      }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("New tokens received successfully");
+        console.log("responseFromServer: ", responseFromServer.data);
+        return responseFromServer.data;
+      }
+      else { console.log("Failed to recieve tokens: ", responseFromServer.status); }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Failed to recieve tokens: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+        } else {
+          console.log("Recieve failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+      }
+    }
+  }
+
   export default { 
     extractIdFromResponse,
     getUserInfo,
-    googleSingIn
+    googleSingIn,
+    refreshTokens
   }
