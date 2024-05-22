@@ -142,7 +142,7 @@ const addStudent = async (student: any, accessToken: string) => {
 
 const updateStudent = async (student: any, accessToken: string) => {
     try {
-      const responseFromServer = await axios.put(`${config.serverAddress}/student`,
+      const responseFromServer = await axios.put(`${config.serverAddress}/student/${student._id}`,
         student,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );

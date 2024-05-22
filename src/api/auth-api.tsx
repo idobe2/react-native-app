@@ -2,13 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import config from "../core/config";
 
-const getUserInfo = async (token: string) => {
+const getUserInfo = async (token: any) => {
   if (!token) return;
   try {
     const userInfoResponse = await fetch(
       "https://www.googleapis.com/userinfo/v2/me",
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token.accessToken}` },
       }
     );
     const userInfoJson = await userInfoResponse.json();
@@ -141,7 +141,36 @@ const extractIdFromResponse = (response: string): string => {
         alert("An unexpected error occurred");
       }
     }
-  
+  }
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const responseFromServer = await axios.post(
+        `${config.serverAddress}/auth/login`,
+        { email, password }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("Login successful");
+        alert("Login successful");
+        await AsyncStorage.setItem("@user", JSON.stringify(responseFromServer.data));
+        return responseFromServer.data;
+      } else {
+        console.log("Login failed with status: ", responseFromServer.status);
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Login failed with error: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          alert(`Login failed: ${error.response.data.message}`);
+        } else {
+          alert("Login failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
   }
 
   export default { 
@@ -150,5 +179,6 @@ const extractIdFromResponse = (response: string): string => {
     googleSingIn,
     refreshTokens,
     registerUser,
-    getAccessToken
+    getAccessToken,
+    signIn
   }

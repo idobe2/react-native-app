@@ -24,4 +24,27 @@ const deletePost = async (postId: string) => {
     }
 }
 
-export default { deletePost };
+const updatePost = async (post: any) => {
+    try {
+        const response = await axios.put(`${config.serverAddress}/post/${post._id}`, post);
+        if (response.status === 200) {
+            console.log("Post updated successfully");
+        }
+        else { console.log("Failed to update post: ", response.status); }
+        return response;
+    }
+    catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+            console.log("Failed to update post: ", error.message);
+            if (error.response) {
+                console.log("Error status: ", error.response.status);
+            } else {
+                console.log("Update failed: Network error or server is down");
+            }
+        } else {
+            console.log("An unexpected error occurred:", error);
+        }
+    }
+}
+
+export default { deletePost, updatePost };

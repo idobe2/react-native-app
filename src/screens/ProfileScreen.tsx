@@ -35,7 +35,6 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   const [changesMade, setChangesMade] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const theme = useContext(themeContext) as any;
-  const [darkMode, setDarkMode] = React.useState<boolean>(false);
   const maxRetries = 3;
   let retryCount = 0;
   
@@ -58,8 +57,17 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
             setName(responseFromServer.data.name);
             setAge(responseFromServer.data.age.toString());
             setImage(responseFromServer.data.image);
+            retryCount = 0; // reset retries on success
           }
         } catch (error) {
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retry ${retryCount}`);
+            setName('');
+            setAge('');
+            setImage('');
+            fetchUserInfo(); // retry fetching
+          }
           console.error("Profile loading failed with error: ", error);
         }
       };
@@ -83,8 +91,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
       name: name, 
       age: age, 
       image: image || userInfo?.image};
-    await StudentApi.deleteStudent(user.accessToken, userInfo?._id);
-    await StudentApi.submitStudent(newUserInfo, user.accessToken);
+      await StudentApi.updateStudent(newUserInfo, user.accessToken);
     console.log("Saving", { name, age, image });
     setChangesMade(false);
     setIsEditing(false);

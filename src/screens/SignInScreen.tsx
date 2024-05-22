@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Google from "expo-auth-session/providers/google";
@@ -9,28 +9,30 @@ import config from "./../core/config";
 import axios from "axios";
 import AuthAPI from "../api/auth-api";
 import StudentAPI from "../api/student-api";
+import themeContext from "../theme/themeContext";
+import { EventRegister } from "react-native-event-listeners";
+import Icon from 'react-native-vector-icons/Feather';
 
 WebBrowser.maybeCompleteAuthSession();
 
-type SignInScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "SignIn"
->;
+type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, "SignIn">;
 
 interface SignInScreenProps {
   navigation: SignInScreenNavigationProp;
 }
 
 const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
-  const [userInfo, setUserInfo] = useState<any>(null); // Specify a more detailed type for user info if known
+  const theme = useContext(themeContext) as any;
+  const [userInfo, setUserInfo] = useState<any>(null);
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: config.androidClientId,
     iosClientId: config.iosClientId,
     webClientId: config.webClientId,
   });
-  const [email, setEmail] = useState<string>(""); // Declare the email state variable
-  const [password, setPassword] = useState<string>(""); // Declare the password state variable
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     async function signIn() {
@@ -52,127 +54,99 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
             };
             await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
             setUserInfo(updatedUser);
-            console.log("Updated access token: ", res.accessToken);
-            console.log("Updated refresh token: ", res.refreshToken);
             navigation.replace("Dashboard", { user: updatedUser });
-          }
-          else {
+          } else {
             await AsyncStorage.removeItem("@user");
             console.log("Failed to refresh tokens");
           }
         }
       } else if (response?.type === "success" && response.authentication) {
-        // console.log("response: ", response.authentication);
-        await getUserInfo(response.authentication);
+        setUserInfo(await AuthAPI.getUserInfo(response.authentication));
+        try {
+          const responseFromServer = await AuthAPI.googleSingIn(
+            config.androidClientId,
+            response.authentication.idToken as string
+          );
+          if (responseFromServer.message === "Login successful") {
+            const updatedUserInfo = {
+              ...userInfo,
+              ...responseFromServer,
+            };
+            await AsyncStorage.setItem("@user", JSON.stringify(updatedUserInfo));
+            setUserInfo(updatedUserInfo);
+            alert("Google login successful");
+            navigation.replace("Dashboard", { user: updatedUserInfo });
+          }
+        } catch (error) {
+          console.error("Failed to fetch user info:", error);
+        }
       }
     }
     signIn();
   }, [response]);
 
-  const getUserInfo = async (token: any) => {
-    if (!token) return;
-    try {
-      const userInfoResponse = await fetch(
-        "https://www.googleapis.com/userinfo/v2/me",
-        {
-          headers: { Authorization: `Bearer ${token.accessToken}` },
-        }
-      );
-      const userInfoJson = await userInfoResponse.json();
-      await AsyncStorage.setItem("@user", JSON.stringify(userInfoJson));
-      setUserInfo(userInfoJson);
-      // console.log("androidClientId: ", config.androidClientId, "token: ", token);
-      const responseFromServer = await AuthAPI.googleSingIn(config.androidClientId, token.idToken);
-      if (responseFromServer.message === "Login successful") {
-        console.log("responseFromServer: ", responseFromServer);
-        const updatedUserInfo = {
-          ...userInfoJson,
-          ...responseFromServer,
-        };  
-        await AsyncStorage.setItem("@user", JSON.stringify(updatedUserInfo));
-        setUserInfo(updatedUserInfo);
-        alert("Google login successful");
-        navigation.replace("Dashboard", { user: updatedUserInfo });
-      }
-    } catch (error) {
-      console.error("Failed to fetch user info:", error);
-    }
-  };
-
   const onLoginPressed = async () => {
     setIsLoading(true);
-    console.log(email, password);
-    try {
-      const responseFromServer = await axios.post(
-        `${config.serverAddress}/auth/login`,
-        { email, password }
-      );
-      if (responseFromServer.status === 200) {
-        console.log("Login successful");
-        alert("Login successful");
-        await AsyncStorage.setItem("@user", JSON.stringify(responseFromServer.data));
-        setUserInfo(responseFromServer.data);
-        if (userInfo) navigation.replace("Dashboard", { user: userInfo });
-        else navigation.replace("Dashboard", { user: responseFromServer.data});
-      } else {
-        console.log("Login failed with status: ", responseFromServer.status);
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        // Error is an AxiosError, now you can access error.response, error.message, etc.
-        console.log("Login failed with error: ", error.message);
-        if (error.response) {
-          console.log("Error status: ", error.response.status);
-          alert(`Login failed: ${error.response.data.message}`);
-        } else {
-          alert("Login failed: Network error or server is down");
-        }
-      } else {
-        // Error is not an AxiosError, handle it differently
-        console.log("An unexpected error occurred:", error);
-        alert("An unexpected error occurred");
-      }
-    } finally { setIsLoading(false); }
+    const responseFromServer = await AuthAPI.signIn(email, password);
+    if (responseFromServer) {
+      alert("Login successful");
+      setUserInfo(responseFromServer);
+      await AsyncStorage.setItem("@user", JSON.stringify(responseFromServer));
+      navigation.replace("Dashboard", { user: responseFromServer });
+    }
+    setIsLoading(false);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    EventRegister.emit("ChangeTheme", !darkMode);
   };
 
   return (
-    <View style={styles.container}>
-      {/* <Text>User Info:</Text>
-      <Text>{JSON.stringify(userInfo, null, 2)}</Text> */}
-      <Text style={styles.title}>Sign In</Text>
+    <View style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
+      <TouchableOpacity style={styles.iconContainer} onPress={toggleDarkMode}>
+        <Icon name="sun" size={30} color={theme.color} />
+      </TouchableOpacity>
+      <Text style={[styles.title, { color: theme.color }]}>Sign In</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Email"
+        placeholderTextColor="grey"
         value={email}
         onChangeText={setEmail}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Password"
+        placeholderTextColor="grey"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
       <View style={styles.buttonContainer}>
-      {isLoading ? (
-        <ActivityIndicator size="large" />
-      ) : ( <Button title="Sign in" onPress={onLoginPressed} /> )}
-      <Button title="Sign in with Google" onPress={() => promptAsync()} />
-        <Button
-          title="Register"
-          onPress={() => navigation.push("Registration")}
-        />
-        <Text style={styles.title}>{"\nDev"}</Text>
-        <Button
-          title="Delete local storage"
-          onPress={() =>
-            AsyncStorage.removeItem("@user").then(() => setUserInfo(null))
-          }
-        />
-        <Button
-          title="Go to Dashboard"
-          onPress={() => navigation.replace("Dashboard", { user: userInfo })}
-        />
+        {isLoading ? (
+          <ActivityIndicator size="large" color={theme.color} />
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={onLoginPressed}>
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={[styles.button, styles.googleButton]} onPress={() => promptAsync()}>
+          <Text style={styles.buttonText}>Sign in with Google</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.push("Registration")}>
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+        {/* <Text style={[styles.devText, { color: theme.color }]}>{"\nDev"}</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => AsyncStorage.removeItem("@user").then(() => setUserInfo(null))}
+        >
+          <Text style={styles.buttonText}>Delete local storage</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.replace("Dashboard", { user: userInfo })}>
+          <Text style={styles.buttonText}>Go to Dashboard</Text>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -181,27 +155,54 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
+    padding: 20,
     justifyContent: "center",
+    alignItems: "center",
+  },
+  iconContainer: {
+    position: "absolute",
+    top: 40,
+    right: 20,
   },
   input: {
     width: "80%",
     height: 40,
-    borderColor: "gray",
     borderWidth: 1,
     marginBottom: 10,
     paddingHorizontal: 10,
+    borderRadius: 5,
   },
   buttonContainer: {
-    width: "60%",
+    width: "80%",
     marginTop: 20,
+    alignItems: "center",
+  },
+  button: {
+    width: "100%",
+    backgroundColor: "#007bff",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  googleButton: {
+    backgroundColor: "#db4437",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
+  },
+  devText: {
+    fontSize: 16,
+    marginTop: 20,
+    textAlign: "center",
   },
 });
 
