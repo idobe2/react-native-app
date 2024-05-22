@@ -1,5 +1,5 @@
 // ProfileScreen.tsx
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import { Alert, View, StyleSheet, Modal } from "react-native";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
@@ -10,6 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import ProfileView from '../components/ProfileView';
 import ProfileEdit from '../components/ProfileEdit';
 import StudentApi from "../api/student-api";
+import { EventRegister } from "react-native-event-listeners";
+import themeContext from "../theme/themeContext";
 
 interface UserInfo {
   _id: string;
@@ -32,8 +34,11 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   const [image, setImage] = useState('');
   const [changesMade, setChangesMade] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const theme = useContext(themeContext) as any;
+  const [darkMode, setDarkMode] = React.useState<boolean>(false);
   const maxRetries = 3;
   let retryCount = 0;
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -120,7 +125,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor:theme.backgroundColor}]}>
       <Modal
         animationType="slide"
         transparent={false}

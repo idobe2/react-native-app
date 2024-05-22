@@ -46,71 +46,25 @@ const RegistrationScreen: React.FC = () => {
       setIsLoading(false);
       return;
     }
-    try {
-      const responseFromServer = await axios.post(`${config.serverAddress}/auth/register`,
-        { email, password }
-      );
-      if (responseFromServer.status === 200) {
-        console.log("User: Register successful");
+    
+      const response = await AuthAPI.registerUser(email, password);
+      if (response) {
         await new Promise(f => setTimeout(f, 5000));
-        await handleStudentRegistration(AuthAPI.extractIdFromResponse(responseFromServer.request._response));
-      } else { console.log("Login failed with status: ", responseFromServer.status); }
-    }
-    catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.log("Login failed with error: ", error.message);
-        if (error.response) {
-          console.log("Error status: ", error.response.status);
-          alert("Login failed: user already exists");
-        } else { alert("Login failed: Network error or server is down"); }
-      } else {
-        console.log("An unexpected error occurred:", error);
-        alert("An unexpected error occurred");
-      }
-    }
-    finally { setIsLoading(false); }
-  };
-
-  const getAccessToken = async () => {
-    try {
-      const responseFromServer = await axios.post(
-        `${config.serverAddress}/auth/login`,
-        { email, password }
-      );
-      if (responseFromServer.status === 200) {
-        setAccessToken(responseFromServer.data.accessToken);
-      } else {
-        console.log("Login failed with status: ", responseFromServer.status);
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.log("Login failed with error: ", error.message);
-        if (error.response) {
-          console.log("Error status: ", error.response.status);
-          alert(`Login failed: ${error.response.data.message}`);
-        } else {
-          alert("Login failed: Network error or server is down");
+        const token = await AuthAPI.getAccessToken(email, password);
+        console.log("Access token: ", token);
+        const photo_res = await handlePhotoSubmit();
+        console.log("Photo submitted", photo_res);
+        const student_res = await StudentApi.addStudent({
+          _id: AuthAPI.extractIdFromResponse(response.request._response),
+          name: name,
+          age: age,
+          image: photo_res,
+        }, token);
+        if (student_res) {
+          console.log("Student added", student_res);
+          alert("Register successful");
         }
-      } else {
-        console.log("An unexpected error occurred:", error);
-        alert("An unexpected error occurred");
-      }
-    }
-  }
-
-  const handleStudentRegistration = async (_id: String) => {
-    await getAccessToken();
-    const res = await handlePhotoSubmit();
-    console.log("Photo submitted", res);
-    console.log("Access token: ", accessToken);
-    try {
-      const responseFromServer = await axios.post(`${config.serverAddress}/student`,
-        { _id, name, age, image: res },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      if (responseFromServer.status === 201) {
-        console.log("Student: Register successful");
-        alert("Register successful");
+        // Clear all fields
         setImage('');
         setEmail('');
         setPassword('');
@@ -118,22 +72,7 @@ const RegistrationScreen: React.FC = () => {
         setName('');
         setAge('');
       }
-      else { console.log("Login failed with status: ", responseFromServer.status); }
-    }
-    catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.log("Login failed with error: ", error.message);
-        if (error.response) {
-          console.log("Error status: ", error.response.status);
-          alert(`Login failed: ${error.response.data.message}`);
-        } else {
-          alert("Login failed: Network error or server is down");
-        }
-      } else {
-        console.log("An unexpected error occurred:", error);
-        alert("An unexpected error occurred");
-      }
-    }
+    setIsLoading(false);
   };
 
   // ********** Image ********** //

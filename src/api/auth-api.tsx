@@ -90,9 +90,65 @@ const extractIdFromResponse = (response: string): string => {
     }
   }
 
+  const registerUser = async (email: string, password: string) => {
+    try {
+      const responseFromServer = await axios.post(
+        `${config.serverAddress}/auth/register`,
+        { email, password }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("User: Register successful");
+        return responseFromServer;
+      } else { console.log("Login failed with status: ", responseFromServer.status); }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Login failed with error: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          alert("Login failed: user already exists");
+        } else { alert("Login failed: Network error or server is down"); }
+      } else {
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
+  }
+
+  const getAccessToken = async (email: string, password: string) => {
+    try {
+      const responseFromServer = await axios.post(
+        `${config.serverAddress}/auth/login`,
+        { email, password }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("Access token: ", responseFromServer.data.accessToken);
+        return responseFromServer.data.accessToken;
+      } else {
+        console.log("Login failed with status: ", responseFromServer.status);
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Login failed with error: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          alert(`Login failed: ${error.response.data.message}`);
+        } else {
+          alert("Login failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
+  
+  }
+
   export default { 
     extractIdFromResponse,
     getUserInfo,
     googleSingIn,
-    refreshTokens
+    refreshTokens,
+    registerUser,
+    getAccessToken
   }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Alert, View, Text, TextInput, Button, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker'; // Make sure to install @react-native-picker/picker
 import { RouteProp } from "@react-navigation/native";
@@ -6,6 +6,7 @@ import axios from "axios";
 import config from "../core/config";
 import * as ImagePicker from 'expo-image-picker';
 import PhotoAPI from '../api/photo-api';
+import themeContext from "../theme/themeContext";
 
 type PostRouteProp = RouteProp<{ params: { user: any } }, "params">;
 
@@ -16,10 +17,11 @@ const Post: React.FC<PostProps> = ({ route }) => {
   const { user } = route.params;
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('books');
-  const [price, setPrice] = useState<number>(0);
+  const [price, setPrice] = useState('');
   const [message, setMessage] = useState('');
   const [image, setImage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const theme = useContext(themeContext) as any;
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -46,7 +48,7 @@ const Post: React.FC<PostProps> = ({ route }) => {
         setTitle('');
         setMessage('');
         setCategory('');
-        setPrice(0);
+        setPrice('');
         setImage('');
       
     } catch (error: unknown) {
@@ -122,23 +124,26 @@ const Post: React.FC<PostProps> = ({ route }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Title:</Text>
+      <Text style={[styles.label, {color:theme.color}]}>Title:</Text>
       <TextInput
-        style={styles.input}
+        placeholderTextColor="grey"
+        style={[styles.input, {color:theme.color}]}
         value={title}
         onChangeText={setTitle}
         placeholder="Enter title"
       />
-      <Text style={styles.label}>Message:</Text>
+      <Text style={[styles.label, {color:theme.color}]}>Message:</Text>
       <TextInput
-        style={styles.input}
+        placeholderTextColor="grey"
+        style={[styles.input, {color:theme.color}]}
         value={message}
         onChangeText={setMessage}
-        placeholder="Enter message"
+        placeholder="Enter description"
         multiline
       />
-      <Text style={styles.label}>Category:</Text>
+      <Text style={[styles.label, {color:theme.color}]}>Category:</Text>
       <Picker
+        style={[styles.input, {color:theme.color}]}
         selectedValue={category}
         onValueChange={(itemValue) => setCategory(itemValue as string)}
         >
@@ -150,15 +155,16 @@ const Post: React.FC<PostProps> = ({ route }) => {
         <Picker.Item label="Smartphones" value="smartphones" />
         <Picker.Item label="Computers" value="computers" />
         </Picker>
-        <Text style={styles.label}>Price (₪):</Text>
+        <Text style={[styles.label, {color:theme.color}]}>Price (₪):</Text>
       <TextInput
-        style={styles.input}
+        placeholderTextColor="grey"
+        style={[styles.input, {color:theme.color}]}
         value={price.toString()}
-        onChangeText={(text) => setPrice(Number(text))}
+        onChangeText={(text) => setPrice((text))}
         placeholder="Enter price"
         keyboardType="numeric"
       />
-      <Text style={styles.label}>Image:</Text>
+      <Text style={[styles.label, {color:theme.color}]}>Image:</Text>
       <View style={styles.imageContainer}>
         <TouchableOpacity onPress={promptForImageSource}>
           {image ? (
@@ -202,6 +208,9 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginBottom: 10,
+  },
+  postButton: {
+    marginBottom: 20,
   },
 });
 

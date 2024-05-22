@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import { Alert, View, Text, StyleSheet, FlatList, Image, RefreshControl, TouchableOpacity } from "react-native";
 import axios from "axios";
 import config from "../core/config";
@@ -7,6 +7,8 @@ import moment from "moment";
 import { Facebook } from 'react-content-loader/native';
 import StudentAPI from '../api/student-api';
 import PostAPI from '../api/post-api';
+import { EventRegister } from "react-native-event-listeners";
+import themeContext from "../theme/themeContext";
 
 interface Post {
   _id: string;
@@ -34,7 +36,8 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [confirm, setConfirm] = useState<boolean>(false);
+  const theme = useContext(themeContext) as any;
+  const [darkMode, setDarkMode] = React.useState<boolean>(false);
   const maxRetries = 3;
   let retryCount = 0;
 
@@ -95,40 +98,56 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
     }
   };
 
+  const handleEdit = async (postId: string) => {
+    const res = await PostAPI.deletePost(postId);
+    if (res && res.status === 200) {
+      console.log("Post deleted successfully");
+      setPosts(posts.filter(post => post._id !== postId));
+    } else {
+      console.log("Failed to delete post");
+    }
+  };
+
   const renderPost = ({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
+    <View style={[styles.postContainer, {backgroundColor:theme.backgroundColor}]}>
       <View style={styles.headerRow}>
         <View style={styles.titleCategory}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={[styles.title, {color:theme.color}]}>{item.title}</Text>
           <Text style={styles.category}>{item.category}</Text>
         </View>
         {item.user && (
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{item.user.name}</Text>
+            <Text style={[styles.userName, {color:theme.color}]}>{item.user.name}</Text>
             <Image source={{ uri: item.user.image }} style={styles.userImage} />
           </View>
         )}
       </View>
-      <Text>{item.price}₪</Text>
-      <Text>{item.message}</Text>
+      <Text style={[styles.text, {color:theme.color}]}>{item.price}₪</Text>
+      <Text style={[styles.text, {color:theme.color}]}>{item.message}</Text>
       {item.image && (
         <Image source={{ uri: item.image }} style={styles.image} />
       )}
       <Text style={styles.date}>Posted {moment(item.date).fromNow()}</Text>
       {fetchUrl.includes(`/post/find/${item.owner}`) && (
-        <TouchableOpacity style={styles.deleteButton} onPress={() => 
-          Alert.alert("Are you sure you want to delete this post?", "This action cannot be undone", [
-          { text: "Cancel", onPress: () => console.log("Cancel Pressed"), style: "cancel" },
-          { text: "Delete", onPress: () => handleDelete(item._id) }
-        ])}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity style={styles.deleteButton} onPress={() =>
+            Alert.alert("Are you sure you want to delete this post?", "This action cannot be undone", [
+              { text: "Cancel", onPress: () => console.log("Cancel Pressed"), style: "cancel" },
+              { text: "Delete", onPress: () => handleDelete(item._id) }
+            ])
+          }>
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(item._id)}>
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor:theme.backgroundColor}]}>
       {loading ? (
         <View style={styles.loaderContainer}>
           <View style={styles.loader}><Facebook /></View>
@@ -192,6 +211,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
+  text:{
+    fontSize: 14,
+    marginBottom: 5,
+  },
   category: {
     fontSize: 16,
     color: '#666',
@@ -223,6 +246,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  editButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: 'blue',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  editButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },

@@ -112,11 +112,69 @@ const submitStudent = async (userInfo: any, accessToken: string) => {
     }
   };
 
+const addStudent = async (student: any, accessToken: string) => {
+    try {
+      const responseFromServer = await axios.post(`${config.serverAddress}/student`,
+        student,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (responseFromServer.status === 201) {
+        console.log("Student added successfully");
+        return responseFromServer.data;
+      }
+      else { console.log("Failed to add student: ", responseFromServer.status); }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Login failed with error: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          alert(`Login failed: ${error.response.data.message}`);
+        } else {
+          alert("Login failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
+}
+
+const updateStudent = async (student: any, accessToken: string) => {
+    try {
+      const responseFromServer = await axios.put(`${config.serverAddress}/student`,
+        student,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (responseFromServer.status === 200) {
+        console.log("Student updated successfully");
+        return responseFromServer.data;
+      }
+      else { console.log("Failed to update student: ", responseFromServer.status); }
+    }
+    catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("Failed to update student: ", error.message);
+        if (error.response) {
+          console.log("Error status: ", error.response.status);
+          alert(`Update failed: ${error.response.data.message}`);
+        } else {
+          alert("Update failed: Network error or server is down");
+        }
+      } else {
+        console.log("An unexpected error occurred:", error);
+        alert("An unexpected error occurred");
+      }
+    }
+  }
+
 export default {
     getAllStudents,
     uploadImage,
     submitStudent,
     deleteStudent,
     getStudent,
-    getStudentById
+    getStudentById,
+    addStudent
+    ,updateStudent
 }
