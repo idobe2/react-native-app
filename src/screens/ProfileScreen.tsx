@@ -1,9 +1,6 @@
-// ProfileScreen.tsx
 import React, { useState, useCallback, useContext } from "react";
 import { Alert, View, StyleSheet, Modal } from "react-native";
-import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
-import config from "../core/config";
 import { RouteProp } from "@react-navigation/native";
 import PostsComponent from "../components/PostsComponent";
 import * as ImagePicker from 'expo-image-picker';
@@ -11,7 +8,7 @@ import ProfileView from '../components/ProfileView';
 import ProfileEdit from '../components/ProfileEdit';
 import StudentApi from "../api/student-api";
 import themeContext from "../theme/themeContext";
-import AuthApi from "../api/auth-api";
+import AuthAPI from "../api/auth-api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UserInfo {
@@ -36,47 +33,38 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   const [changesMade, setChangesMade] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const theme = useContext(themeContext) as any;
-  const maxRetries = 3;
-  let retryCount = 0;
-  
+
+  const fetchUserInfo = async () => {
+    const responseFromServer = await StudentApi.getStudent(user.accessToken);
+      if (responseFromServer) {
+        setUserInfo(responseFromServer);
+        setName(responseFromServer.name);
+        setAge(responseFromServer.age.toString());
+        setImage(responseFromServer.image);
+      } else {
+        const res = await AuthAPI.refreshTokens(user.refreshToken);
+        if (res) {
+          const updatedUser = {
+            ...user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+          };
+          await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+          console.log("Tokens refreshed");
+          user.accessToken = res.accessToken;
+          fetchUserInfo(); // retry fetching with new tokens
+        } else {
+          await AsyncStorage.removeItem("@user");
+          console.log("Failed to refresh tokens");
+        }
+      }
+  };
 
   useFocusEffect(
     useCallback(() => {
-      const fetchUserInfo = async () => {
-        try {
-          const responseFromServer = await axios.get<UserInfo>(
-            `${config.serverAddress}/student/${user.accessToken}`,
-            {
-              headers: {
-                Authorization: `Bearer ${user.accessToken}`,
-              },
-            }
-          );
-          if (responseFromServer.status === 200) {
-            console.log("Profile loaded successfully");
-            setUserInfo(responseFromServer.data);
-            setName(responseFromServer.data.name);
-            setAge(responseFromServer.data.age.toString());
-            setImage(responseFromServer.data.image);
-            retryCount = 0; // reset retries on success
-          }
-        } catch (error) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Retry ${retryCount}`);
-            setName('');
-            setAge('');
-            setImage('');
-            fetchUserInfo(); // retry fetching
-          }
-          else {
-            console.log("Refreshing tokens");    
-          }
-        }
-      }
       fetchUserInfo();
     }, [user._id, user.accessToken])
-);
+  );
 
   const handleInputChange = (newValue: string, field: 'name' | 'age') => {
     setChangesMade(true);
