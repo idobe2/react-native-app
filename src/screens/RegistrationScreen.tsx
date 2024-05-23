@@ -1,18 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, Button, Alert, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
-import axios from 'axios';
-import config from './../core/config';
-import { emailValidator } from '../helpers/EmailValidator';
-import { passwordValidator } from '../helpers/PasswordValidator';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { emailValidator } from '../helpers/EmailValidator';
+import { passwordValidator } from '../helpers/PasswordValidator';
 import PhotoAPI from '../api/photo-api';
 import AuthAPI from '../api/auth-api';
 import StudentApi from '../api/student-api';
 
 const RegistrationScreen: React.FC = () => {
-
-  // ********** Register ********** //
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,8 +17,14 @@ const RegistrationScreen: React.FC = () => {
   const [age, setAge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Access token state
-  const [accessToken, setAccessToken] = useState('');
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }
+    })();
+  }, []);
 
   const handleUserRegistration = async () => {
     setIsLoading(true);
@@ -46,25 +48,20 @@ const RegistrationScreen: React.FC = () => {
       setIsLoading(false);
       return;
     }
-    
-      const response = await AuthAPI.registerUser(email, password);
-      if (response) {
-        await new Promise(f => setTimeout(f, 5000));
-        const token = await AuthAPI.getAccessToken(email, password);
-        console.log("Access token: ", token);
-        const photo_res = await handlePhotoSubmit();
-        console.log("Photo submitted", photo_res);
-        const student_res = await StudentApi.addStudent({
-          _id: AuthAPI.extractIdFromResponse(response.request._response),
-          name: name,
-          age: age,
-          image: photo_res,
-        }, token);
-        if (student_res) {
-          console.log("Student added", student_res);
-          alert("Register successful");
-        }
-        // Clear all fields
+
+    const response = await AuthAPI.registerUser(email, password);
+    if (response) {
+      await new Promise(f => setTimeout(f, 5000));
+      const token = await AuthAPI.getAccessToken(email, password);
+      const photo_res = await handlePhotoSubmit();
+      const student_res = await StudentApi.addStudent({
+        _id: AuthAPI.extractIdFromResponse(response.request._response),
+        name,
+        age,
+        image: photo_res,
+      }, token);
+      if (student_res) {
+        alert("Register successful");
         setImage('');
         setEmail('');
         setPassword('');
@@ -72,26 +69,25 @@ const RegistrationScreen: React.FC = () => {
         setName('');
         setAge('');
       }
+    }
     setIsLoading(false);
   };
 
-  // ********** Image ********** //
   const pickImage = async (source: 'camera' | 'gallery') => {
     if (source === 'camera') {
-      console.log('Camera selected');
       try {
         const pickerResult = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-      });
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
         if (!pickerResult.canceled && pickerResult.assets.length > 0) {
           const uri = pickerResult.assets[0].uri;
           setImage(uri);
         }
-      } catch (error) { console.error('Failed to open camera', error); }
-    } 
-    else {
-      console.log('Gallery selected');
+      } catch (error) {
+        console.error('Failed to open camera', error);
+      }
+    } else {
       try {
         const pickerResult = await ImagePicker.launchImageLibraryAsync({
           allowsEditing: true,
@@ -100,34 +96,40 @@ const RegistrationScreen: React.FC = () => {
         if (!pickerResult.canceled && pickerResult.assets.length > 0) {
           const uri = pickerResult.assets[0].uri;
           setImage(uri);
-        } 
-      } catch (error) { console.error('Failed to open gallery', error); }
+        }
+      } catch (error) {
+        console.error('Failed to open gallery', error);
+      }
     }
   };
 
   const handlePhotoSubmit = async () => {
-    console.log('handlePhotoSubmit: ', image);
     const res = await PhotoAPI.submitPhoto(image);
     if (res !== "") {
-      console.log('res from handlePhotoSubmit:\n', res);
       setImage(res);
       return res;
+    } else {
+      console.log('Failed to submit photo');
     }
-    else { console.log('Failed to submit photo'); }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
-      <View>
-        {image == "" && <Image source={require('../assests/avagreen.png')} style={styles.avatar} />}
-        {image != "" && <Image source={{ uri: image }} style={styles.avatar} />}
-        <TouchableOpacity onPress={() => pickImage('camera')}>
-          <Ionicons name={'camera'} style={styles.cameraButton} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => pickImage('gallery')}>
-          <Ionicons name={'image'} style={styles.galleryButton} />
-        </TouchableOpacity>
+      <View style={styles.avatarContainer}>
+        {image === "" ? (
+          <Image source={require('../assests/avagreen.png')} style={styles.avatar} />
+        ) : (
+          <Image source={{ uri: image }} style={styles.avatar} />
+        )}
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={() => pickImage('camera')}>
+            <Ionicons name="camera" style={styles.icon} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => pickImage('gallery')}>
+            <Ionicons name="image" style={styles.icon} />
+          </TouchableOpacity>
+        </View>
       </View>
       <TextInput
         style={styles.input}
@@ -141,11 +143,12 @@ const RegistrationScreen: React.FC = () => {
         placeholder="Age"
         value={age}
         onChangeText={setAge}
+        keyboardType="numeric"
         autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
-        placeholder="Username"
+        placeholder="Email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -168,8 +171,11 @@ const RegistrationScreen: React.FC = () => {
       />
       {isLoading ? (
         <ActivityIndicator size="large" />
-      ) : (<Button title="Register" onPress={handleUserRegistration} />)}
-      {/* <Button title="Submit Photo" onPress={handlePhotoSubmit} /> */}
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={handleUserRegistration}>
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -177,41 +183,58 @@ const RegistrationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
   },
   input: {
     width: '100%',
+    height: 40,
+    borderColor: 'gray',
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  button: {
+    width: '100%',
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  avatarContainer: {
     marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 50,
+    marginBottom: 20,
   },
-  cameraButton: {
+  iconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: 150,
+  },
+  icon: {
     fontSize: 35,
     color: 'black',
-    position: 'absolute',
-    bottom: 15,
-    right: -25,
-  },
-  galleryButton: {
-    fontSize: 35,
-    color: 'black',
-    position: 'absolute',
-    bottom: 15,
-    right: 90,
   },
 });
 

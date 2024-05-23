@@ -126,6 +126,7 @@ const Post: React.FC<PostProps> = ({ route }) => {
         <Picker
           selectedValue={category}
           onValueChange={(itemValue) => setCategory(itemValue as string)}
+          style={{ color: theme.color }}
         >
           <Picker.Item label="Books" value="books" />
           <Picker.Item label="Clothing" value="clothes" />

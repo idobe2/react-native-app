@@ -10,8 +10,9 @@ import * as ImagePicker from 'expo-image-picker';
 import ProfileView from '../components/ProfileView';
 import ProfileEdit from '../components/ProfileEdit';
 import StudentApi from "../api/student-api";
-import { EventRegister } from "react-native-event-listeners";
 import themeContext from "../theme/themeContext";
+import AuthApi from "../api/auth-api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UserInfo {
   _id: string;
@@ -68,13 +69,14 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
             setImage('');
             fetchUserInfo(); // retry fetching
           }
-          console.error("Profile loading failed with error: ", error);
+          else {
+            console.log("Refreshing tokens");    
+          }
         }
-      };
-
+      }
       fetchUserInfo();
     }, [user._id, user.accessToken])
-  );
+);
 
   const handleInputChange = (newValue: string, field: 'name' | 'age') => {
     setChangesMade(true);
@@ -142,7 +144,6 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
         <ProfileEdit
           name={name}
           age={age}
-          image={image}
           onSave={handleSave}
           onCancel={() => setIsEditing(false)}
           onInputChange={handleInputChange}
