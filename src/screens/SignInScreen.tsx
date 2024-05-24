@@ -1,21 +1,31 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Google from "expo-auth-session/providers/google";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../App";
 import config from "./../core/config";
-import axios from "axios";
 import AuthAPI from "../api/auth-api";
 import StudentAPI from "../api/student-api";
 import themeContext from "../theme/themeContext";
 import { EventRegister } from "react-native-event-listeners";
-import Icon from 'react-native-vector-icons/Feather';
+import Icon from "react-native-vector-icons/Feather";
 
 WebBrowser.maybeCompleteAuthSession();
 
-type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, "SignIn">;
+type SignInScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "SignIn"
+>;
 
 interface SignInScreenProps {
   navigation: SignInScreenNavigationProp;
@@ -72,7 +82,10 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
               ...userInfo,
               ...responseFromServer,
             };
-            await AsyncStorage.setItem("@user", JSON.stringify(updatedUserInfo));
+            await AsyncStorage.setItem(
+              "@user",
+              JSON.stringify(updatedUserInfo)
+            );
             setUserInfo(updatedUserInfo);
             alert("Google login successful");
             navigation.replace("Dashboard", { user: updatedUserInfo });
@@ -103,10 +116,13 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.backgroundColor }]}
+    >
       <TouchableOpacity style={styles.iconContainer} onPress={toggleDarkMode}>
         <Icon name="sun" size={30} color={theme.color} />
       </TouchableOpacity>
+      <Image source={require("../assests/logo.png")} style={styles.logo} />
       <Text style={[styles.title, { color: theme.color }]}>Sign In</Text>
       <TextInput
         style={[styles.input, { color: theme.color, borderColor: theme.color }]}
@@ -131,10 +147,16 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
             <Text style={styles.buttonText}>Sign In</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={[styles.button, styles.googleButton]} onPress={() => promptAsync()}>
+        <TouchableOpacity
+          style={[styles.button, styles.googleButton]}
+          onPress={() => promptAsync()}
+        >
           <Text style={styles.buttonText}>Sign in with Google</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.push("Registration")}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.push("Registration")}
+        >
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
         {/* <Text style={[styles.devText, { color: theme.color }]}>{"\nDev"}</Text>
@@ -203,6 +225,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
     textAlign: "center",
+  },
+  logo: {
+    maxWidth: 250,
+    maxHeight: 75,
+    width: '100%',
+    marginBottom: 20,
   },
 });
 

@@ -1,10 +1,10 @@
 import axios from "axios";
-import FormData from 'form-data';
+import FormData from "form-data";
 import config from "../core/config";
 
 const apiClient = axios.create({
   baseURL: config.serverAddress,
-  headers: {Accept: "application/vnd.github.v3+json"},
+  headers: { Accept: "application/vnd.github.v3+json" },
 });
 
 interface UploadImageResponse {
@@ -13,27 +13,25 @@ interface UploadImageResponse {
 }
 
 const submitPhoto = async (imageUri: string) => {
-    console.log("submitting photo: ", imageUri);
-    const url = `http://${config.serverAddress}/file/upload`;
-    try {
-      const formData = new FormData();
-      const uriParts = imageUri.split(".");
-      const fileType = uriParts[uriParts.length - 1];
-      const filename = "photo" + Date.now().toString() + "." + fileType;
-      formData.append("file", {
-        uri: imageUri,
-        type: `image/${fileType}`,
-        name: filename,
-      });
+  console.log("submitting photo: ", imageUri);
+  const url = `http://${config.serverAddress}/file/upload`;
+  try {
+    const formData = new FormData();
+    const uriParts = imageUri.split(".");
+    const fileType = uriParts[uriParts.length - 1];
+    const filename = "photo" + Date.now().toString() + "." + fileType;
+    formData.append("file", {
+      uri: imageUri,
+      type: `image/${fileType}`,
+      name: filename,
+    });
     console.log("form data", formData);
     console.log("url:", url);
-    const responseFromServer = await apiClient.post("/file/upload", formData,
-    {
+    const responseFromServer = await apiClient.post("/file/upload", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-      }
+        "Content-Type": "multipart/form-data",
+      },
     });
-    // const res = await axios.post('http://172.20.10.2:3000/file/upload', formData)
     const data = responseFromServer.data as UploadImageResponse;
     if (data.message !== "Uploaded successfully") {
       console.log("save failed " + responseFromServer.status); //TODO
@@ -48,4 +46,4 @@ const submitPhoto = async (imageUri: string) => {
   return "";
 };
 
-export default { submitPhoto }
+export default { submitPhoto };

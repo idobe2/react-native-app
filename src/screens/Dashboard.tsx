@@ -44,24 +44,24 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "tomato",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: "#e91e63",
+        tabBarInactiveTintColor: "orange",
       })}
     >
-      <Tab.Screen 
-      name="Home" 
-      component={Home as React.FC<{}>}
-      initialParams={{ user: user }} 
+      <Tab.Screen
+        name="Home"
+        component={Home as React.FC<{}>}
+        initialParams={{ user: user }}
       />
-      <Tab.Screen 
-      name="Post" 
-      component={Post as React.FC<{}>}
-      initialParams={{ user: user }} 
+      <Tab.Screen
+        name="Post"
+        component={Post as React.FC<{}>}
+        initialParams={{ user: user }}
       />
-      <Tab.Screen 
-      name="Profile" 
-      component={Profile as React.FC<{}>}
-      initialParams={{ user: user }} 
+      <Tab.Screen
+        name="Profile"
+        component={Profile as React.FC<{}>}
+        initialParams={{ user: user }}
       />
       <Tab.Screen
         name="Settings"
