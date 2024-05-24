@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignInScreen from './src/screens/SignInScreen';
 import Dashboard from './src/screens/Dashboard';
-import RegistrationScreen from './src/screens/RegistrationScreen';  // Import the new screen
+import RegistrationScreen from './src/screens/RegistrationScreen';
 import { EventRegister } from "react-native-event-listeners";
 import theme from './src/theme/theme';
 import themeContext from './src/theme/themeContext';
@@ -13,11 +13,10 @@ export type RootStackParamList = {
   Dashboard: {
     user: any;
   };
-  Registration: undefined;  // Add a type for the new screen if necessary
+  Registration: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 
 export default function App() {
   const [darkMode, setDarkMode] = React.useState<boolean>(false);

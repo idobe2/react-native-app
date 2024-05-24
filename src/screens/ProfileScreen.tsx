@@ -10,6 +10,7 @@ import StudentApi from "../api/student-api";
 import themeContext from "../theme/themeContext";
 import AuthAPI from "../api/auth-api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PhotoApi from "../api/photo-api";
 
 interface UserInfo {
   _id: string;
@@ -52,6 +53,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
           await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
           console.log("Tokens refreshed");
           user.accessToken = res.accessToken;
+          user.refreshToken = res.refreshToken;
           fetchUserInfo(); // retry fetching with new tokens
         } else {
           await AsyncStorage.removeItem("@user");
@@ -63,7 +65,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   useFocusEffect(
     useCallback(() => {
       fetchUserInfo();
-    }, [user._id, user.accessToken])
+    }, [user._id, user.accessToken, user.refreshToken])
   );
 
   const handleInputChange = (newValue: string, field: 'name' | 'age') => {
@@ -81,11 +83,36 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
       name: name, 
       age: age, 
       image: image || userInfo?.image};
-      await StudentApi.updateStudent(newUserInfo, user.accessToken);
-    console.log("Saving", { name, age, image });
+      const uploadImage = await PhotoApi.submitPhoto(image);
+      newUserInfo.image = uploadImage as string;
+      const updatedStudent = await StudentApi.updateStudent(newUserInfo, user.accessToken);
+      console.log("Updated student", updatedStudent);
+      if (updatedStudent) {
+        setUserInfo(updatedStudent);
+        setName(updatedStudent.name);
+        setAge(updatedStudent.age.toString());
+        setImage(updatedStudent.image);
+        Alert.alert("Changes saved successfully");
+      }
+      else {
+        const res = await AuthAPI.refreshTokens(user.refreshToken);
+        if (res) {
+          const updatedUser = {
+            ...user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+          };
+          await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+          console.log("Tokens refreshed");
+          user.accessToken = res.accessToken;
+          user.refreshToken = res.refreshToken;
+          handleSave(); // retry saving with new tokens
+          Alert.alert("Changes saved successfully");
+        }
+      }
+    // console.log("Saving", { name, age, image });
     setChangesMade(false);
     setIsEditing(false);
-    Alert.alert("Changes saved successfully");
   };
 
   const pickImage = async (source: 'camera' | 'gallery') => {

@@ -1,6 +1,35 @@
 import axios from 'axios';
 import config from '../core/config';
 
+const addPost = async (post: any, accessToken: string) => {
+    try {
+        const response = await axios.post(`${config.serverAddress}/post`, post,
+        {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+        }
+        );
+        if (response.status === 201) {
+            console.log("Post added successfully");
+        }
+        else { console.log("Failed to add post: ", response.status); }
+        return response;
+    }
+    catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+            console.log("Failed to add post: ", error.message);
+            if (error.response) {
+                console.log("Error status: ", error.response.status);
+            } else {
+                console.log("Add failed: Network error or server is down");
+            }
+        } else {
+            console.log("An unexpected error occurred:", error);
+        }
+    }
+
+}
+
+
 const deletePost = async (postId: string) => {
     try {
         const response = await axios.delete(`${config.serverAddress}/post/delete/${postId}`);
@@ -47,4 +76,4 @@ const updatePost = async (post: any) => {
     }
 }
 
-export default { deletePost, updatePost };
+export default { deletePost, updatePost, addPost };

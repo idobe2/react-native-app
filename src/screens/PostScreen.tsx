@@ -2,11 +2,11 @@ import React, { useState, useContext } from "react";
 import { Alert, View, Text, TextInput, Button, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { RouteProp } from "@react-navigation/native";
-import axios from "axios";
-import config from "../core/config";
 import * as ImagePicker from 'expo-image-picker';
 import PhotoAPI from '../api/photo-api';
 import themeContext from "../theme/themeContext";
+import AuthAPI from "../api/auth-api";
+import PostAPI from "../api/post-api";
 
 type PostRouteProp = RouteProp<{ params: { user: any } }, "params">;
 
@@ -26,41 +26,41 @@ const Post: React.FC<PostProps> = ({ route }) => {
   const handleSubmit = async () => {
     setIsLoading(true);
     const res = await handlePhotoSubmit();
-    try {
-      const responseFromServer = await axios.post(
-        `${config.serverAddress}/post`,
-        { title, message, category, price, image: res },
-        {
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        }
-      );
-      if (responseFromServer.status === 201) {
-        alert('Post submitted!');
-        setTitle('');
-        setMessage('');
-        setCategory('books');
-        setPrice('');
-        setImage('');
-      } else {
-        console.log("No photo to submit");
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.log("Posting failed with error: ", error.message);
-        if (error.response) {
-          alert(`Posting failed: ${error.response.data.message}`);
-        } else {
-          alert("Posting failed: Network error or server is down");
-        }
-      } else {
-        console.log("An unexpected error occurred:", error);
-        alert("An unexpected error occurred");
-      }
-    } finally {
-      setIsLoading(false);
+    const Post: any = {
+      title,
+      message,
+      category,
+      price: Number(price),
+      image: res as string,
     }
+    const post: any = await PostAPI.addPost(Post, user.accessToken);
+    if (post) {
+        alert('Post submitted!');
+        setTitle(post.title);
+        setMessage(post.message);
+        setCategory(post.category);
+        setPrice(post.price);
+        setImage(post.image);
+      } 
+      else {
+        const res = await AuthAPI.refreshTokens(user.refreshToken);
+        if (res) {
+          console.log("Tokens refreshed");
+          user.accessToken = res.accessToken;
+          user.refreshToken = res.refreshToken;
+          const post: any = await PostAPI.addPost(Post, user.accessToken);
+          if (post) {
+            alert('Post submitted!');
+            setTitle(post.title);
+            setMessage(post.message);
+            setCategory(post.category);
+            setPrice(post.price);
+            setImage(post.image);
+          } 
+          alert('Post submitted!');
+        }
+      }
+      setIsLoading(false);
   };
 
   const pickImage = async (source: 'camera' | 'gallery') => {

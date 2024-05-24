@@ -175,6 +175,6 @@ export default {
     deleteStudent,
     getStudent,
     getStudentById,
-    addStudent
-    ,updateStudent
+    addStudent,
+    updateStudent
 }

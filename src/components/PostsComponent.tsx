@@ -7,7 +7,6 @@ import moment from "moment";
 import { Facebook } from 'react-content-loader/native';
 import StudentAPI from '../api/student-api';
 import PostAPI from '../api/post-api';
-import { EventRegister } from "react-native-event-listeners";
 import themeContext from "../theme/themeContext";
 import { Picker } from '@react-native-picker/picker';
 

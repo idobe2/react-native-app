@@ -62,7 +62,7 @@ const extractIdFromResponse = (response: string): string => {
   }
 
   const refreshTokens = async (refreshToken: string) => {
-    console.log("Refresh token: ", refreshToken);
+    // console.log("Refresh token: ", refreshToken);
     try {
       const responseFromServer = await axios.get(`${config.serverAddress}/auth/refresh`,
       {
@@ -71,7 +71,7 @@ const extractIdFromResponse = (response: string): string => {
       );
       if (responseFromServer.status === 200) {
         console.log("New tokens received successfully");
-        console.log("responseFromServer: ", responseFromServer.data);
+        // console.log("responseFromServer: ", responseFromServer.data);
         return responseFromServer.data;
       }
       else { console.log("Failed to recieve tokens: ", responseFromServer.status); }
@@ -94,7 +94,7 @@ const extractIdFromResponse = (response: string): string => {
     try {
       const responseFromServer = await axios.post(
         `${config.serverAddress}/auth/register`,
-        { email, password }
+        { email: email.toLowerCase(), password }
       );
       if (responseFromServer.status === 200) {
         console.log("User: Register successful");
@@ -119,7 +119,7 @@ const extractIdFromResponse = (response: string): string => {
     try {
       const responseFromServer = await axios.post(
         `${config.serverAddress}/auth/login`,
-        { email, password }
+        { email: email.toLowerCase(), password }
       );
       if (responseFromServer.status === 200) {
         console.log("Access token: ", responseFromServer.data.accessToken);
@@ -147,7 +147,7 @@ const extractIdFromResponse = (response: string): string => {
     try {
       const responseFromServer = await axios.post(
         `${config.serverAddress}/auth/login`,
-        { email, password }
+        { email: email.toLowerCase(), password }
       );
       if (responseFromServer.status === 200) {
         console.log("Login successful");

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, StyleSheet, Alert, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { emailValidator } from '../helpers/EmailValidator';
@@ -7,8 +7,19 @@ import { passwordValidator } from '../helpers/PasswordValidator';
 import PhotoAPI from '../api/photo-api';
 import AuthAPI from '../api/auth-api';
 import StudentApi from '../api/student-api';
+import config from '../core/config';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
+import themeContext from "../theme/themeContext";
 
-const RegistrationScreen: React.FC = () => {
+type RegistrationScreenNavigationProp = StackNavigationProp<RootStackParamList, "Registration">;
+
+interface RegistrationScreenProps {
+  navigation: RegistrationScreenNavigationProp;
+}
+
+const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigation }) => {
+  const theme = useContext(themeContext) as any;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,6 +27,7 @@ const RegistrationScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -68,6 +80,7 @@ const RegistrationScreen: React.FC = () => {
         setConfirmPassword('');
         setName('');
         setAge('');
+        navigation.replace("SignIn");
       }
     }
     setIsLoading(false);
@@ -110,12 +123,13 @@ const RegistrationScreen: React.FC = () => {
       return res;
     } else {
       console.log('Failed to submit photo');
+      return `${config.serverAddress}/uploads/avagreen.png`
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+    <View style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
+      <Text style={[styles.title, { color: theme.color }]}>Register</Text>
       <View style={styles.avatarContainer}>
         {image === "" ? (
           <Image source={require('../assests/avagreen.png')} style={styles.avatar} />
@@ -124,22 +138,22 @@ const RegistrationScreen: React.FC = () => {
         )}
         <View style={styles.iconContainer}>
           <TouchableOpacity onPress={() => pickImage('camera')}>
-            <Ionicons name="camera" style={styles.icon} />
+            <Ionicons name="camera" style={[styles.icon, { color: theme.color }]} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => pickImage('gallery')}>
-            <Ionicons name="image" style={styles.icon} />
+            <Ionicons name="image" style={[styles.icon, { color: theme.color }]} />
           </TouchableOpacity>
         </View>
       </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Name"
         value={name}
         onChangeText={setName}
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Age"
         value={age}
         onChangeText={setAge}
@@ -147,14 +161,14 @@ const RegistrationScreen: React.FC = () => {
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
@@ -162,7 +176,7 @@ const RegistrationScreen: React.FC = () => {
         autoCapitalize="none"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: theme.color, borderColor: theme.color }]}
         placeholder="Confirm Password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
