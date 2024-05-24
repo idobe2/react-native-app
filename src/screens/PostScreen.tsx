@@ -130,11 +130,12 @@ const Post: React.FC<PostProps> = ({ route }) => {
         >
           <Picker.Item label="Books" value="books" />
           <Picker.Item label="Clothing" value="clothes" />
-          <Picker.Item label="Home decor and furniture" value="home" />
+          <Picker.Item label="Home decor" value="home" />
           <Picker.Item label="Videogames" value="videogames" />
           <Picker.Item label="Consumer electronics" value="electronics" />
           <Picker.Item label="Smartphones" value="smartphones" />
           <Picker.Item label="Computers" value="computers" />
+          <Picker.Item label="Other" value="other" />
         </Picker>
       </View>
       <Text style={[styles.label, { color: theme.color }]}>Price (₪):</Text>

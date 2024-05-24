@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext } from "react";
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import { Alert, View, Text, StyleSheet, FlatList, Image, RefreshControl, TouchableOpacity, Modal, TextInput, Button } from "react-native";
 import axios from "axios";
 import config from "../core/config";
@@ -38,6 +38,8 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [maxRetryReached, setMaxRetryReached] = useState<boolean>(false);
 
   const [editedTitle, setEditedTitle] = useState<string>("");
   const [editedCategory, setEditedCategory] = useState('');
@@ -46,42 +48,37 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
   
   const theme = useContext(themeContext) as any;
   const maxRetries = 3;
-  let retryCount = 0;
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchPosts = async () => {
-        setLoading(true);
-        try {
-          const response = await axios.get<Post[]>(`${config.serverAddress}${fetchUrl}`);
-          const postsWithUsers = await Promise.all(response.data.map(async post => {
-            const user = await StudentAPI.getStudentById(post.owner);
-            return { ...post, user };
-          }));
-          setPosts(postsWithUsers);
-          console.log("Posts loaded successfully");
-          retryCount = 0; // reset retries on success
-        } catch (error: unknown) {
-          setLoading(false);
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Retry ${retryCount}`);
-            setPosts([]); // clear posts on retry
-            fetchPosts(); // retry fetching
-          } else {
-            console.log("Failed to fetch posts after retries");
-          }
-        } finally {
-          setTimeout(() => {
-            setLoading(false);
-          }, 1500);
-        }
-      };
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get<Post[]>(`${config.serverAddress}${fetchUrl}`);
+      const postsWithUsers = await Promise.all(response.data.map(async post => {
+        const user = await StudentAPI.getStudentById(post.owner);
+        return { ...post, user };
+      }));
+      setPosts(postsWithUsers);
+      console.log("Posts loaded successfully");
+      setRetryCount(0); // reset retries on success
+      setMaxRetryReached(false); // reset max retry flag
+    } catch (error: unknown) {
+      if (retryCount < maxRetries) {
+        setRetryCount(prevRetryCount => prevRetryCount + 1);
+        console.log(`Retry ${retryCount + 1}`);
+      } else {
+        console.log("Failed to fetch posts after retries");
+        setMaxRetryReached(true); // set max retry flag
+      }
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
+    }
+  };
 
-      fetchPosts();
-      return () => {};
-    }, [fetchUrl])
-  );
+  useEffect(() => {
+    fetchPosts();
+  }, [retryCount, fetchUrl]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -93,8 +90,12 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
       }));
       setPosts(postsWithUsers);
       console.log("Posts refreshed successfully");
+      setMaxRetryReached(false); // reset max retry flag on refresh success
     } catch (error: unknown) {
       console.log("Failed to refresh posts");
+      if (retryCount >= maxRetries) {
+        setMaxRetryReached(true); // set max retry flag on refresh failure
+      }
     } finally {
       setRefreshing(false);
     }
@@ -180,6 +181,10 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
           <View style={styles.loader}><Facebook /></View>
           <View style={styles.loader}><Facebook /></View>
         </View>
+      ) : maxRetryReached ? (
+        <View style={styles.noPostsContainer}>
+          <Text style={[styles.noPostsText, {color:theme.color}]}>No posts available.</Text>
+        </View>
       ) : (
         <FlatList
           data={posts}
@@ -208,17 +213,18 @@ const PostsComponent: React.FC<PostsComponentProps> = ({ fetchUrl }) => {
               placeholder="Title"
             />
             <Picker
-            style={[styles.input, {color:theme.color}]}
-            selectedValue={editedCategory}
-            onValueChange={setEditedCategory}
+              style={[styles.input, {color:theme.color}]}
+              selectedValue={editedCategory}
+              onValueChange={setEditedCategory}
             >
-            <Picker.Item label="Books" value="books" />
-            <Picker.Item label="Clothing" value="clothes" />
-            <Picker.Item label="Home decor and furniture" value="home" />
-            <Picker.Item label="Videogames" value="videogames" />
-            <Picker.Item label="Consumer electronics" value="electronics" />
-            <Picker.Item label="Smartphones" value="smartphones" />
-            <Picker.Item label="Computers" value="computers" />
+              <Picker.Item label="Books" value="books" />
+              <Picker.Item label="Clothing" value="clothes" />
+              <Picker.Item label="Home decor" value="home" />
+              <Picker.Item label="Videogames" value="videogames" />
+              <Picker.Item label="Consumer electronics" value="electronics" />
+              <Picker.Item label="Smartphones" value="smartphones" />
+              <Picker.Item label="Computers" value="computers" />
+              <Picker.Item label="Other" value="other" />
             </Picker>
             <TextInput
               style={styles.input}
@@ -379,7 +385,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: 'bold',
-  }
+  },
+  noPostsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noPostsText: {
+    fontSize: 18,
+    color: 'red',
+    fontWeight: 'bold',
+  },
 });
 
 export default PostsComponent;

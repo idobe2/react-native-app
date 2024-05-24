@@ -33,38 +33,40 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   const [image, setImage] = useState('');
   const [changesMade, setChangesMade] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const theme = useContext(themeContext) as any;
 
   const fetchUserInfo = async () => {
     const responseFromServer = await StudentApi.getStudent(user.accessToken);
-      if (responseFromServer) {
-        setUserInfo(responseFromServer);
-        setName(responseFromServer.name);
-        setAge(responseFromServer.age.toString());
-        setImage(responseFromServer.image);
+    if (responseFromServer) {
+      setUserInfo(responseFromServer);
+      setName(responseFromServer.name);
+      setAge(responseFromServer.age.toString());
+      setImage(responseFromServer.image);
+    } else {
+      const res = await AuthAPI.refreshTokens(user.refreshToken);
+      if (res) {
+        const updatedUser = {
+          ...user,
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken,
+        };
+        await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+        console.log("Tokens refreshed");
+        user.accessToken = res.accessToken;
+        user.refreshToken = res.refreshToken;
+        fetchUserInfo(); // retry fetching with new tokens
       } else {
-        const res = await AuthAPI.refreshTokens(user.refreshToken);
-        if (res) {
-          const updatedUser = {
-            ...user,
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-          };
-          await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
-          console.log("Tokens refreshed");
-          user.accessToken = res.accessToken;
-          user.refreshToken = res.refreshToken;
-          fetchUserInfo(); // retry fetching with new tokens
-        } else {
-          await AsyncStorage.removeItem("@user");
-          console.log("Failed to refresh tokens");
-        }
+        await AsyncStorage.removeItem("@user");
+        console.log("Failed to refresh tokens");
       }
+    }
   };
 
   useFocusEffect(
     useCallback(() => {
       fetchUserInfo();
+      setRefreshKey(prevKey => prevKey + 1);
     }, [user._id, user.accessToken, user.refreshToken])
   );
 
@@ -82,35 +84,34 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
       _id: userInfo?._id, 
       name: name, 
       age: age, 
-      image: image || userInfo?.image};
-      const uploadImage = await PhotoApi.submitPhoto(image);
-      newUserInfo.image = uploadImage as string;
-      const updatedStudent = await StudentApi.updateStudent(newUserInfo, user.accessToken);
-      console.log("Updated student", updatedStudent);
-      if (updatedStudent) {
-        setUserInfo(updatedStudent);
-        setName(updatedStudent.name);
-        setAge(updatedStudent.age.toString());
-        setImage(updatedStudent.image);
+      image: image || userInfo?.image
+    };
+    const uploadImage = await PhotoApi.submitPhoto(image);
+    newUserInfo.image = uploadImage as string;
+    const updatedStudent = await StudentApi.updateStudent(newUserInfo, user.accessToken);
+    console.log("Updated student", updatedStudent);
+    if (updatedStudent) {
+      setUserInfo(updatedStudent);
+      setName(updatedStudent.name);
+      setAge(updatedStudent.age.toString());
+      setImage(updatedStudent.image);
+      Alert.alert("Changes saved successfully");
+    } else {
+      const res = await AuthAPI.refreshTokens(user.refreshToken);
+      if (res) {
+        const updatedUser = {
+          ...user,
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken,
+        };
+        await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
+        console.log("Tokens refreshed");
+        user.accessToken = res.accessToken;
+        user.refreshToken = res.refreshToken;
+        handleSave(); // retry saving with new tokens
         Alert.alert("Changes saved successfully");
       }
-      else {
-        const res = await AuthAPI.refreshTokens(user.refreshToken);
-        if (res) {
-          const updatedUser = {
-            ...user,
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-          };
-          await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
-          console.log("Tokens refreshed");
-          user.accessToken = res.accessToken;
-          user.refreshToken = res.refreshToken;
-          handleSave(); // retry saving with new tokens
-          Alert.alert("Changes saved successfully");
-        }
-      }
-    // console.log("Saving", { name, age, image });
+    }
     setChangesMade(false);
     setIsEditing(false);
   };
@@ -149,7 +150,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
   };
 
   return (
-    <View style={[styles.container, {backgroundColor:theme.backgroundColor}]}>
+    <View style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
       <Modal
         animationType="slide"
         transparent={false}
@@ -173,7 +174,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ route }) => {
           onImagePick={promptForImageSource}
         />
       )}
-      {userInfo && <PostsComponent fetchUrl={`/post/find/${userInfo._id}`} />}
+      {userInfo && <PostsComponent key={refreshKey} fetchUrl={`/post/find/${userInfo._id}`} />}
     </View>
   );
 };

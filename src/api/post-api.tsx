@@ -87,7 +87,7 @@ const getAllUserPosts = async (owner: string) => {
     } else {
       console.log("Failed to fetch posts: ", response.status);
     }
-    return response;
+    return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.log("Failed to fetch posts: ", error.message);

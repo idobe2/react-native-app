@@ -4,6 +4,7 @@ import Home from "./HomeScreen";
 import Settings from "./SettingsScreen";
 import Post from "./PostScreen";
 import Profile from "./ProfileScreen";
+import Categories from "./CategoriesScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { RouteProp } from "@react-navigation/native";
 
@@ -30,7 +31,9 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
             | "add-circle"
             | "add-circle-outline"
             | "settings"
-            | "settings-outline";
+            | "settings-outline"
+            | "grid"
+            | "grid-outline";
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
           } else if (route.name === "Profile") {
@@ -39,6 +42,8 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
             iconName = focused ? "settings" : "settings-outline";
           } else if (route.name === "Post") {
             iconName = focused ? "add-circle" : "add-circle-outline";
+          } else if (route.name === "Categories") {
+            iconName = focused ? "grid" : "grid-outline";
           } else {
             iconName = "alert-circle-outline"; // Default icon to ensure iconName is always defined
           }
@@ -52,6 +57,10 @@ const Dashboard: React.FC<DashboardProps> = ({ route }) => {
         name="Home"
         component={Home as React.FC<{}>}
         initialParams={{ user: user }}
+      />
+      <Tab.Screen
+        name="Categories"
+        component={Categories as React.FC<{}>}
       />
       <Tab.Screen
         name="Post"

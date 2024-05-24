@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignInScreen from './src/screens/SignInScreen';
 import Dashboard from './src/screens/Dashboard';
 import RegistrationScreen from './src/screens/RegistrationScreen';
+import CategoryPostScreen from './src/screens/CategoryPostsScreen';
 import { EventRegister } from "react-native-event-listeners";
 import theme from './src/theme/theme';
 import themeContext from './src/theme/themeContext';
@@ -14,6 +15,9 @@ export type RootStackParamList = {
     user: any;
   };
   Registration: undefined;
+  CategoryPosts: {
+    categoryId: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,6 +42,7 @@ export default function App() {
         <Stack.Screen name="SignIn" component={SignInScreen} />
         <Stack.Screen name="Dashboard" component={Dashboard as React.FC<{}>} />
         <Stack.Screen name="Registration" component={RegistrationScreen} />
+        <Stack.Screen name="CategoryPosts" component={CategoryPostScreen as React.FC<{}>} />
       </Stack.Navigator>
     </NavigationContainer>
     </themeContext.Provider>

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -66,6 +66,7 @@ const Settings: React.FC<SettingsProps> = ({ route, navigation }) => {
               user._id
             );
             const posts: any = await PostAPI.getAllUserPosts(user._id);
+            console.log(posts);
             posts.forEach(async (post: any) => {
               await PostAPI.deletePost(post._id);
             });
