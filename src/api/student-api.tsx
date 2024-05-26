@@ -43,7 +43,6 @@ const getStudentById = async (id: string) => {
       `${config.serverAddress}/student/get/${id}`
     );
     if (responseFromServer.status === 200) {
-      console.log("Student get successfully");
       return responseFromServer.data;
     } else {
       console.log("Failed to get student: ", responseFromServer.status);

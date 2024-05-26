@@ -10,7 +10,7 @@ const categories = [
   { id: "home", title: "Home Decor", icon: "🏠" },
   { id: "videogames", title: "Videogames", icon: "🎮" },
   { id: "electronics", title: "Electronics", icon: "📺" },
-  { id: "smartphones", title: "Smartphones", icon: "📲" },
+  { id: "smartphones", title: "Smartphones", icon: "📱" },
   { id: "computers", title: "Computers", icon: "💻" },
   { id: "other", title: "Other", icon: "🛒"}
 ];

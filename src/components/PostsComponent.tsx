@@ -2,7 +2,6 @@ import React, { useState, useCallback, useContext, useEffect } from "react";
 import { Alert, View, Text, StyleSheet, FlatList, Image, RefreshControl, TouchableOpacity, Modal, TextInput, Button } from "react-native";
 import axios from "axios";
 import config from "../core/config";
-import { useFocusEffect } from "@react-navigation/native";
 import moment from "moment";
 import { Facebook } from 'react-content-loader/native';
 import StudentAPI from '../api/student-api';
@@ -301,8 +300,8 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   image: {
-    width: 300,
-    height: 200,
+    width: 330,
+    height: 230,
     borderRadius: 5,
     marginTop: 10,
     marginBottom: 10,
@@ -310,7 +309,7 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: '#888',
-    marginTop: 10,
+    
   },
   loaderContainer: {
     flex: 1,

@@ -25,6 +25,11 @@ const Post: React.FC<PostProps> = ({ route }) => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
+    if (!title || !message || !price || !image) {
+      alert('Please fill all fields');
+      setIsLoading(false);
+      return;
+    }
     const res = await handlePhotoSubmit();
     const Post: any = {
       title,

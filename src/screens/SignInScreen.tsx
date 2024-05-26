@@ -54,7 +54,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
           setUserInfo(userObj);
           navigation.replace("Dashboard", { user: userObj });
         } else {
-          console.log("Failed to load student");
           const res = await AuthAPI.refreshTokens(userObj.refreshToken);
           if (res) {
             const updatedUser = {
